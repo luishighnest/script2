@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import shutil
+import zipfile
 from pathlib import Path
 from flask import Flask, render_template, jsonify, request, Response, session, redirect, url_for
 
@@ -99,7 +100,7 @@ def script_page():
         "script.html",
         profile_name=pname,
         chrome_profile_set=has_folder,
-        chrome_profile_path=saved_path or "Nessuna cartella configurata"
+        chrome_profile_path=saved_path or "Nessun profilo caricato"
     )
 
 @app.route("/logout")
@@ -107,17 +108,18 @@ def logout_action():
     session.clear()
     return redirect("/login")
 
-# API PER GESTIONE CARICAMENTO CARTELLA
-@app.route("/api/upload-profile-folder", methods=["POST"])
-def upload_profile_folder():
+# API PER UPLOAD ZIP DEL CHROME PROFILE
+@app.route("/api/upload-profile-zip", methods=["POST"])
+def upload_profile_zip():
     if "user_profile_id" not in session:
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
 
-    files = request.files.getlist("files[]")
-    paths = request.form.getlist("paths[]")
+    if "file" not in request.files:
+        return jsonify({"ok": False, "error": "Nessun file inviato"}), 400
 
-    if not files or not paths:
-        return jsonify({"ok": False, "error": "Nessun file ricevuto dalla cartella"}), 400
+    uploaded_file = request.files["file"]
+    if not uploaded_file.filename or not uploaded_file.filename.lower().endswith(".zip"):
+        return jsonify({"ok": False, "error": "Formato non supportato. Seleziona un file .zip"}), 400
 
     pid = session["user_profile_id"]
     profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
@@ -129,18 +131,23 @@ def upload_profile_folder():
             pass
     profile_dest.mkdir(parents=True, exist_ok=True)
 
-    for file_obj, rel_path in zip(files, paths):
-        parts = Path(rel_path).parts
-        if len(parts) > 1:
-            clean_rel = Path(*parts[1:])
-        else:
-            clean_rel = Path(parts[0])
+    zip_path = profile_dest / "temp_profile.zip"
+    uploaded_file.save(str(zip_path))
 
-        target_file = profile_dest / clean_rel
-        target_file.parent.mkdir(parents=True, exist_ok=True)
-        file_obj.save(str(target_file))
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(profile_dest)
+        zip_path.unlink(missing_ok=True)
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Errore durante l'estrazione dello zip: {e}"}), 500
 
-    rel_profile_str = str(profile_dest.relative_to(BASE_DIR))
+    # Se lo zip conteneva una sottocartella principale (es. chrome_profile/)
+    subdirs = [p for p in profile_dest.iterdir() if p.is_dir()]
+    final_dir = profile_dest
+    if len(subdirs) == 1 and not any(p.is_file() for p in profile_dest.iterdir()):
+        final_dir = subdirs[0]
+
+    rel_profile_str = str(final_dir.relative_to(BASE_DIR))
     cfg = load_profiles_config()
     if pid not in cfg:
         cfg[pid] = {}
