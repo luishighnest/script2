@@ -147,10 +147,11 @@ class HeadlessExtractor:
         
         dev_id = getattr(self, "_real_device_id", None) or self._device_id()
 
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         headers = {
             "authorization": f"Bearer {jwt}",
             "x-dazn-device": dev_id,
-            "user-agent": getattr(await _get_http_session(), "_user_agent", "") or "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "user-agent": ua,
             "content-type": "application/json",
             "accept": "*/*",
             "origin": "https://www.dazn.com",
@@ -252,7 +253,8 @@ class HeadlessExtractor:
             console.print(f"[dim]  → 2. Startup API: {time.time() - _t:.2f}s[/dim]")
             
             if not startup_r.get("ok"):
-                self.result["error"] = f"Startup API fallita: {startup_r.get('status','?')}"
+                err_sd = startup_r.get("error") or startup_r.get("body") or f"HTTP {startup_r.get('status', 'sconosciuto')}"
+                self.result["error"] = f"Startup API fallita: {err_sd}"
                 return self.result
 
             sd = json.loads(startup_r["body"]).get("ServiceDictionary", {})
@@ -293,7 +295,7 @@ class HeadlessExtractor:
                 await asyncio.sleep(2)
             except Exception:
                 pass
-            page, jwt = await self._get_page_and_jwt()
+            page, jwt = await self._get_page_and_jwt(profile_dir)
             # Se cache svuotata (403), richiama Startup per endpoint fresco
             if not _CACHED_SERVICES.get("Playback"):
                 startup_url = "https://startup.core.indazn.com/misl/v5/Startup"
@@ -319,7 +321,8 @@ class HeadlessExtractor:
         console.print(f"[dim]  → 3. Playback API: {time.time() - _t:.2f}s[/dim]")
 
         if not pb_r.get("ok"):
-            self.result["error"] = f"Playback API: {pb_r.get('status','?')}"
+            err_detail = pb_r.get("error") or pb_r.get("body") or f"HTTP {pb_r.get('status', 'sconosciuto')}"
+            self.result["error"] = f"Playback API fallita: {err_detail}"
             return self.result
 
         pb = json.loads(pb_r["body"])
