@@ -4,6 +4,7 @@ import os
 import sys
 import shutil
 import zipfile
+import subprocess
 from pathlib import Path
 from flask import Flask, render_template, jsonify, request, Response, session, redirect, url_for
 
@@ -39,6 +40,31 @@ def load_profiles_config():
 def save_profiles_config(data):
     PROFILES_CONFIG_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
+def sync_to_github(commit_msg: str):
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if not token:
+        print("[Git Sync] GITHUB_TOKEN non configurato, sync su repo saltato.")
+        return False, "GITHUB_TOKEN non trovato"
+
+    repo_url = f"https://x-access-token:{token}@github.com/luishighnest/script2.git"
+
+    try:
+        subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True)
+        subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True)
+        subprocess.run(["git", "add", "saved_profiles", "profiles_config.json"], cwd=str(BASE_DIR), check=True)
+        
+        # Commit se ci sono cambiamenti
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR))
+        if diff.returncode != 0:
+            subprocess.run(["git", "commit", "-m", commit_msg], cwd=str(BASE_DIR), check=True)
+            subprocess.run(["git", "push", repo_url, "HEAD:main"], cwd=str(BASE_DIR), check=True)
+            print("[Git Sync] Salvataggio permanente su GitHub completato con successo!")
+            return True, "Sync completato"
+        return True, "Nessun cambiamento da committare"
+    except Exception as e:
+        print(f"[Git Sync Error] {e}")
+        return False, str(e)
+
 def _image_url(img) -> str:
     if isinstance(img, dict):
         img_id = img.get("Id", "")
@@ -56,6 +82,10 @@ def get_active_chrome_profile(profile_id):
             path_obj = BASE_DIR / path_obj
         if path_obj.exists():
             return str(path_obj)
+    # Fallback predefinito alla cartella salvata per id
+    fallback_dir = UPLOAD_PROFILES_DIR / f"profile_{profile_id}"
+    if fallback_dir.exists():
+        return str(fallback_dir)
     return str(BASE_DIR / "chrome_profile")
 
 @app.route("/")
@@ -95,6 +125,11 @@ def script_page():
         if not p_obj.is_absolute():
             p_obj = BASE_DIR / p_obj
         has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
+    else:
+        fallback_dir = UPLOAD_PROFILES_DIR / f"profile_{pid}"
+        if fallback_dir.exists() and any(fallback_dir.iterdir()):
+            has_folder = True
+            saved_path = str(fallback_dir.relative_to(BASE_DIR))
 
     return render_template(
         "script.html",
@@ -108,7 +143,7 @@ def logout_action():
     session.clear()
     return redirect("/login")
 
-# API PER UPLOAD ZIP DEL CHROME PROFILE
+# API PER UPLOAD ZIP DEL CHROME PROFILE CON AUTO-PUSH SU GITHUB
 @app.route("/api/upload-profile-zip", methods=["POST"])
 def upload_profile_zip():
     if "user_profile_id" not in session:
@@ -141,7 +176,6 @@ def upload_profile_zip():
     except Exception as e:
         return jsonify({"ok": False, "error": f"Errore durante l'estrazione dello zip: {e}"}), 500
 
-    # Se lo zip conteneva una sottocartella principale (es. chrome_profile/)
     subdirs = [p for p in profile_dest.iterdir() if p.is_dir()]
     final_dir = profile_dest
     if len(subdirs) == 1 and not any(p.is_file() for p in profile_dest.iterdir()):
@@ -154,10 +188,15 @@ def upload_profile_zip():
     cfg[pid]["chrome_profile_path"] = rel_profile_str
     save_profiles_config(cfg)
 
+    # SINCRONIZZA AUTOMATICAMENTE SU GITHUB PERMANENTEMENTE
+    git_ok, git_msg = sync_to_github(f"persist: aggiorna chrome_profile per {pid}")
+
     return jsonify({
         "ok": True,
         "profile": session.get("user_profile_name", pid),
-        "chrome_profile_path": rel_profile_str
+        "chrome_profile_path": rel_profile_str,
+        "github_sync": git_ok,
+        "github_msg": git_msg
     })
 
 @app.route("/api/events", methods=["GET"])
@@ -173,7 +212,6 @@ def get_live_events():
 
     async def _fetch():
         explorer = DaznExplorer()
-        # In DaznExplorer la sezione degli eventi live si chiama 'Live'
         tiles = await explorer.get_tiles("Live")
         items = []
         for t in tiles:

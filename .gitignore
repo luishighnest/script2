@@ -1,6 +1,4 @@
-﻿@
-chrome_profile/
-__pycache__/
+﻿__pycache__/
 *.egg-info/
 *.pyc
-
+temp_*.zip
