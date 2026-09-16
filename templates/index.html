@@ -131,18 +131,18 @@
         <div class="auth-card">
             <div class="text-center mb-4">
                 <i class="fa-brands fa-chrome fa-3x text-info mb-2"></i>
-                <h4 class="fw-bold text-white">Configura Chrome Profile</h4>
-                <p class="text-secondary small">Profilo autenticato: <strong id="profile-name-label" class="text-warning"></strong></p>
+                <h4 class="fw-bold text-white">Configura Cartella Chrome</h4>
+                <p class="text-secondary small">Profilo: <strong id="profile-name-label" class="text-warning"></strong></p>
             </div>
             <div id="setup-error" class="alert alert-danger d-none py-2 small"></div>
             <form onsubmit="handleProfileSetup(event)">
                 <div class="mb-3">
                     <label class="form-label text-secondary small">Percorso Cartella Chrome Profile</label>
                     <input type="text" id="input-profile-path" class="form-control bg-dark text-white border-secondary" placeholder="Es. chrome_profile oppure C:\Users\...\chrome_profile" required>
-                    <div class="form-text text-secondary small">Inserisci il path relativo (es. <code>chrome_profile</code>) o assoluto della cartella del profilo browser.</div>
+                    <div class="form-text text-secondary small">Verrà memorizzato in modo <strong>permanente</strong> per questo profilo.</div>
                 </div>
                 <button type="submit" class="btn btn-dazn w-100 py-2">
-                    <i class="fa-solid fa-play me-2"></i>Avvia Interfaccia
+                    <i class="fa-solid fa-save me-2"></i>Salva e Avvia Interfaccia
                 </button>
             </form>
         </div>
@@ -172,8 +172,8 @@
 
         <div class="container py-4">
             <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-4 py-2">
-                <small class="text-secondary"><i class="fa-solid fa-folder me-1"></i> Chrome Profile attivo: <code id="active-profile-path" class="text-info"></code></small>
-                <button class="btn btn-sm btn-link text-warning p-0 text-decoration-none" onclick="changeProfilePath()">Cambia cartella</button>
+                <small class="text-secondary"><i class="fa-solid fa-folder me-1"></i> Cartella Chrome salvata: <code id="active-profile-path" class="text-info"></code></small>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="changeProfilePath()">Modifica</button>
             </div>
 
             <ul class="nav nav-pills mb-4" id="viewTabs" role="tablist">
@@ -240,7 +240,7 @@
                     if (data.chrome_profile_set) {
                         showMain(data.profile, data.chrome_profile_path);
                     } else {
-                        showProfileSetup(data.profile);
+                        showProfileSetup(data.profile, data.chrome_profile_path);
                     }
                 } else {
                     showLogin();
@@ -256,12 +256,12 @@
             document.getElementById('section-main').classList.add('d-none');
         }
 
-        function showProfileSetup(profileName) {
+        function showProfileSetup(profileName, existingPath) {
             document.getElementById('section-login').classList.add('d-none');
             document.getElementById('section-profile-setup').classList.remove('d-none');
             document.getElementById('section-main').classList.add('d-none');
             document.getElementById('profile-name-label').innerText = profileName;
-            document.getElementById('input-profile-path').value = "chrome_profile";
+            document.getElementById('input-profile-path').value = existingPath || "chrome_profile";
         }
 
         function showMain(profileName, profilePath) {
@@ -287,7 +287,11 @@
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    showProfileSetup(data.profile);
+                    if (data.chrome_profile_set) {
+                        showMain(data.profile, data.chrome_profile_path);
+                    } else {
+                        showProfileSetup(data.profile, data.chrome_profile_path);
+                    }
                 } else {
                     errDiv.innerText = data.error || 'Password non valida';
                     errDiv.classList.remove('d-none');
@@ -326,7 +330,7 @@
         async function changeProfilePath() {
             const res = await fetch('/api/session');
             const data = await res.json();
-            showProfileSetup(data.profile || 'Profilo');
+            showProfileSetup(data.profile || 'Profilo', data.chrome_profile_path);
         }
 
         async function logout() {
@@ -495,7 +499,7 @@
             loadExtracted();
         }
 
-        // Verifica stato iniziale
+        // Avvio
         checkSession();
     </script>
 </body>

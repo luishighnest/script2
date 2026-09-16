@@ -16,11 +16,24 @@ from dazn_navigator2.services.browser import BrowserManager
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dazn-secret-auth-key-2026")
 
-# Mappa delle password ai rispettivi profili
+PROFILES_CONFIG_FILE = BASE_DIR / "profiles_config.json"
+
+# Mappa password -> ID profilo
 PROFILES = {
-    "mpd": "Profilo MPD",
-    "pz8": "Profilo PZ8"
+    "mpd": {"id": "mpd", "name": "Profilo MPD"},
+    "pz8": {"id": "pz8", "name": "Profilo PZ8"}
 }
+
+def load_profiles_config():
+    if PROFILES_CONFIG_FILE.exists():
+        try:
+            return json.loads(PROFILES_CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+def save_profiles_config(data):
+    PROFILES_CONFIG_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 def _image_url(img) -> str:
     if isinstance(img, dict):
@@ -30,8 +43,9 @@ def _image_url(img) -> str:
         return ""
     return str(img) if img else ""
 
-def get_active_chrome_profile():
-    p = session.get("chrome_profile_path", "chrome_profile")
+def get_active_chrome_profile(profile_id):
+    cfg = load_profiles_config()
+    p = cfg.get(profile_id, {}).get("chrome_profile_path") or session.get("chrome_profile_path", "chrome_profile")
     path_obj = Path(p)
     if not path_obj.is_absolute():
         path_obj = BASE_DIR / path_obj
@@ -43,12 +57,17 @@ def index():
 
 @app.route("/api/session", methods=["GET"])
 def check_session():
-    if "user_profile" in session:
+    if "user_profile_id" in session:
+        pid = session["user_profile_id"]
+        pname = session.get("user_profile_name", "Profilo")
+        cfg = load_profiles_config()
+        saved_path = cfg.get(pid, {}).get("chrome_profile_path")
         return jsonify({
             "logged_in": True,
-            "profile": session["user_profile"],
-            "chrome_profile_set": bool(session.get("chrome_profile_path")),
-            "chrome_profile_path": session.get("chrome_profile_path", "")
+            "profile_id": pid,
+            "profile": pname,
+            "chrome_profile_set": bool(saved_path),
+            "chrome_profile_path": saved_path or ""
         })
     return jsonify({"logged_in": False})
 
@@ -58,26 +77,46 @@ def login():
     password = body.get("password", "").strip()
 
     if password in PROFILES:
-        session["user_profile"] = PROFILES[password]
-        # Cancella eventuale path precedente per chiedere la cartella
-        session.pop("chrome_profile_path", None)
-        return jsonify({"ok": True, "profile": session["user_profile"]})
+        prof = PROFILES[password]
+        pid = prof["id"]
+        session["user_profile_id"] = pid
+        session["user_profile_name"] = prof["name"]
+        
+        cfg = load_profiles_config()
+        saved_path = cfg.get(pid, {}).get("chrome_profile_path")
+        
+        return jsonify({
+            "ok": True,
+            "profile_id": pid,
+            "profile": prof["name"],
+            "chrome_profile_set": bool(saved_path),
+            "chrome_profile_path": saved_path or ""
+        })
     return jsonify({"ok": False, "error": "Password non corretta"}), 401
 
 @app.route("/api/set-profile-path", methods=["POST"])
 def set_profile_path():
-    if "user_profile" not in session:
+    if "user_profile_id" not in session:
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
 
+    pid = session["user_profile_id"]
     body = request.get_json() or {}
     p_path = body.get("chrome_profile_path", "").strip()
     if not p_path:
         p_path = "chrome_profile"
 
+    # Salva in modo permanente nel file profiles_config.json
+    cfg = load_profiles_config()
+    if pid not in cfg:
+        cfg[pid] = {}
+    cfg[pid]["chrome_profile_path"] = p_path
+    save_profiles_config(cfg)
+
     session["chrome_profile_path"] = p_path
+
     return jsonify({
         "ok": True,
-        "profile": session["user_profile"],
+        "profile": session.get("user_profile_name", pid),
         "chrome_profile_path": p_path
     })
 
@@ -88,13 +127,13 @@ def logout():
 
 @app.route("/api/events", methods=["GET"])
 def get_saved_events():
-    if "user_profile" not in session:
+    if "user_profile_id" not in session:
         return jsonify({"error": "Non autenticato"}), 401
     return jsonify(_load())
 
 @app.route("/api/live", methods=["GET"])
 def get_live_events():
-    if "user_profile" not in session:
+    if "user_profile_id" not in session:
         return jsonify({"error": "Non autenticato"}), 401
 
     async def _fetch():
@@ -129,9 +168,10 @@ def get_live_events():
 
 @app.route("/api/extract", methods=["POST"])
 def extract_stream():
-    if "user_profile" not in session:
+    if "user_profile_id" not in session:
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
 
+    pid = session["user_profile_id"]
     body = request.get_json() or {}
     asset_id = body.get("asset_id") or body.get("id")
     title = body.get("title", "Evento")
@@ -139,7 +179,7 @@ def extract_stream():
     if not asset_id:
         return jsonify({"ok": False, "error": "asset_id mancante"}), 400
 
-    target_profile_dir = get_active_chrome_profile()
+    target_profile_dir = get_active_chrome_profile(pid)
 
     async def _do_extract():
         ext = HeadlessExtractor()
