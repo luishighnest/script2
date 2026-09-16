@@ -1,0 +1,24 @@
+{
+   "Radio TV Serie A": [
+      {
+         "name": "Serie A Live",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/7tfht71gencskbimbq74nr67e_image-header_pIt_1770549500000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-13T12:30:00Z",
+         "end": "2026-09-13T15:45:00Z",
+         "mpd": "https://dca-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvOGM4dm1yd3lvdGxuMTRqNWs5eHhyYjgzdCJdLCJleGMiOltdLCJoZWFkZXJzIjpbInVzZXItYWdlbnQiXSwiY28iOnRydWUsImlwIjpmYWxzZSwiYXNuIjpbIjMwNzIyIiwiMTk4NDcxIl0sInNzaWQiOiJiNDA4ZDYyNGI4NDMiLCJpbnRzaWciOiJfeHhkX1pCSHh2cERMNWd4alZhOUwya0lndXZ4SUJldTNhYURnU0pCclNvIiwiaWF0IjoxNzg5MzEwMzcxLCJleHAiOjE3ODkzOTY3NzF9.fWDWMsWMUGi7npkl0Bo_tK6NtHmGbr9NwAsK06JPcQE/8c8vmrwyotln14j5k9xxrb83t/web/stream.mpd?channel=7078&outlet=dazn-italy&plang=it",
+         "key": "8f22c6ab9f885eadb0399b0c73be756c:444e94a497e078ef114a3c7ffac0ad38",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
+   ],
+   "Live TV": [
+      {
+         "name": "DAZN 1",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1788259786000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2024-05-23T10:00:00Z",
+         "end": "3000-01-01T00:00:00Z",
+         "mpd": "https://dct-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODkzOTY3MDYsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoyLCJwYXRoIjoiOGViOTUwYjA5YmIxZjMzOTBlZDQ4ODgzN2VhZjk5ODY3MDc2OTRkMSIsInNzaWQiOiJiNDA4ZDYyNGI4NDMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIzMDcyMiIsIjE5ODQ3MSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODkzMTAzMDZ9.9EZ-Xzf7ZDNq1BWf-_5LHvQmZACefSkcoPE4qqHb5lc/dash/dazn-linear-206/stream.mpd?p=web",
+         "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
+   ]
+}

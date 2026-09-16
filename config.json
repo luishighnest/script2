@@ -1,0 +1,8 @@
+{
+  "print_extension_link": true,
+  "browser_timeout": 0,
+  "debug_mode": false,
+  "extraction_engine": "curl_cffi",
+  "include_ua_curl": true,
+  "include_ua_headless": true
+}
