@@ -17,27 +17,27 @@ CDP_PORT = 9222
 
 
 
-# Preferisce il .wvd incluso nel progetto, poi cerca nel percorso corrente o desktop utente
+# Preferisce il .wvd incluso nel progetto, poi cerca sul desktop e path noti
+
 _WVD_LOCAL = Path(__file__).resolve().parent.parent.parent / "device.wvd"
+
 WVD_PATH = str(_WVD_LOCAL) if _WVD_LOCAL.exists() else None
 
-if not WVD_PATH:
-    user_desktop = Path.home() / "Desktop"
-    search_roots = [Path.cwd(), _WVD_LOCAL.parent]
-    if user_desktop.exists():
-        search_roots.append(user_desktop)
-    for scan_path in search_roots:
-        if not scan_path.exists():
-            continue
-        for root, dirs, files in os.walk(scan_path):
-            for f in files:
-                if f.lower().endswith(".wvd"):
-                    WVD_PATH = os.path.join(root, f)
-                    break
-            if WVD_PATH:
+for scan_path in ([] if WVD_PATH else [r"./", r"C:\Users\user\Desktop\l3-keys-main\l3-keys-main", r"C:\Users\user\Desktop\2225908683", r"C:\Users\user\Desktop"]):
+
+    for root, dirs, files in os.walk(scan_path):
+
+        for f in files:
+
+            if f.lower().endswith(".wvd"):
+
+                WVD_PATH = os.path.join(root, f)
+
                 break
-        if WVD_PATH:
-            break
+
+        if WVD_PATH: break
+
+    if WVD_PATH: break
 
 
 
@@ -116,6 +116,7 @@ class HeadlessExtractor:
         headers = {
             "authorization": f"Bearer {jwt}",
             "x-dazn-device": dev_id,
+            "user-agent": getattr(await _get_http_session(), "_user_agent", "") or "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "content-type": "application/json",
             "accept": "*/*",
             "origin": "https://www.dazn.com",
@@ -241,7 +242,7 @@ class HeadlessExtractor:
 
         # Playback API
         _t = time.time()
-        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.41.0-hotfix.1.645&capabilities=mta"
+        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
         pb_url = f"{playback_svc}?{qs}"
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
@@ -262,11 +263,11 @@ class HeadlessExtractor:
             # Se cache svuotata (403), richiama Startup per endpoint fresco
             if not _CACHED_SERVICES.get("Playback"):
                 startup_url = "https://startup.core.indazn.com/misl/v5/Startup"
-                startup_body = {"LandingPageKey": "", "Languages": "it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer": "", "PromoCode": ""}
-                startup_r2 = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
-                if startup_r2.get("ok"):
-                    sd2 = json.loads(startup_r2["body"]).get("ServiceDictionary", {})
-                    ver2 = json.loads(startup_r2["body"]).get("Version", "v3")
+                startup_body = {"LandingPageKey":"", "Languages":"it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer":"Web", "PromoCode":""}
+                startup_r = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
+                if startup_r.get("ok"):
+                    sd2 = json.loads(startup_r["body"]).get("ServiceDictionary", {})
+                    ver2 = json.loads(startup_r["body"]).get("Version", "v3")
                     def _svc2(key):
                         entry = sd2.get(key, {})
                         if isinstance(entry, str):
@@ -326,21 +327,42 @@ class HeadlessExtractor:
             sep = "&" if "?" in fetch_mpd_url else "?"
             fetch_mpd_url = f"{fetch_mpd_url}{sep}{cdn_name}={cdn_value}"
 
-        if engine == "headless" and page:
-            mpd_r = await page.evaluate(
-                """({url, headers}) =>
-                    fetch(url, {headers})
-                        .then(async r => ({ok: r.ok, status: r.status, body: await r.text()}))
-                        .catch(e => ({ok: false, error: e.message}))
-                """,
-                {"url": fetch_mpd_url, "headers": {"dazn-token": dazn_token, "user-agent": ua, "referer": "https://www.dazn.com/"}}
-            )
-        else:
-            mpd_r = await self._chiama_api(fetch_mpd_url, jwt, method="GET", page=page, cdn_token=dazn_token)
+        # Fetch MPD: la CDN DAZN valida il dazn-token confrontando l'User-Agent.
+        # Evitiamo header UA incoerenti per evitare Forbidden-680 (401).
+        client = await _get_http_session()
+        mpd_hdrs = {
+            "origin": "https://www.dazn.com",
+            "referer": "https://www.dazn.com/",
+            "dazn-token": dazn_token,
+            "accept": "*/*"
+        }
+        try:
+            r_mpd_resp = await client.get(fetch_mpd_url, headers=mpd_hdrs, timeout=10)
+            if r_mpd_resp.status_code == 200:
+                mpd_r = {"ok": True, "status": 200, "body": r_mpd_resp.text}
+            else:
+                # Fallback via browser
+                if page:
+                    mpd_r = await page.evaluate(
+                        """async ({url, token}) => {
+                            try {
+                                const r = await fetch(url, { headers: { "dazn-token": token } });
+                                return { ok: r.ok, status: r.status, body: await r.text() };
+                            } catch(e) { return { ok: false, error: e.message }; }
+                        }""",
+                        {"url": fetch_mpd_url, "token": dazn_token}
+                    )
+                else:
+                    mpd_r = {"ok": False, "status": r_mpd_resp.status_code, "body": r_mpd_resp.text}
+        except Exception as e:
+            mpd_r = {"ok": False, "error": str(e)}
+
         console.print(f"[dim]  → 4. Fetch MPD: {time.time() - _t:.2f}s[/dim]")
 
         if not mpd_r.get("ok"):
-            self.result["error"] = f"Fetch MPD: {mpd_r.get('status','?')}"
+            err_detail = mpd_r.get('body', '') or mpd_r.get('error', '')
+            self.result["error"] = f"Fetch MPD: {mpd_r.get('status','?')} - Dettaglio server: {err_detail}"
+            console.print(f"[bold red]  [Dettaglio Errore MPD][/bold red] Status: {mpd_r.get('status')} | Risposta Server: {err_detail}")
             return self.result
 
         _t = time.time()
@@ -366,75 +388,93 @@ class HeadlessExtractor:
 
         dev_id = getattr(self, "_real_device_id", None) or self._device_id()
         lic_hdrs = {
-            "content-type": "application/octet-stream", "origin": "https://www.dazn.com",
-            "referer": "https://www.dazn.com/", "user-agent": ua,
-            "x-brand": "DAZN", "x-daznid": dev_id, "x-correlation-id": str(_uuid.uuid4()),
+            "content-type": "application/octet-stream",
+            "origin": "https://www.dazn.com",
+            "referer": "https://www.dazn.com/",
+            "authorization": f"Bearer {jwt}",
+            "x-brand": "DAZN",
+            "x-daznid": dev_id,
+            "x-correlation-id": str(_uuid.uuid4()),
         }
         console.print(f"[dim]  → 5. PSSH + Challenge CDM: {time.time() - _t:.2f}s[/dim]")
 
         _t = time.time()
-        # License request diretta e ultra-veloce
-        if engine == "headless" and page:
-            fixture_url = f"https://www.dazn.com/it-IT/fixture/{asset_id}"
+        # License request: usiamo il browser context page con gli header specifici
+        js_lic_code = """async ({url, headers, body}) => {
+            try {
+                const r = await fetch(url, {method:"POST", headers, body: new Uint8Array(body)});
+                if (!r.ok) {
+                    const txt = await r.text();
+                    return {ok: false, status: r.status, statusText: r.statusText, bodyText: txt, headers: Object.fromEntries(r.headers.entries())};
+                }
+                const buf = await r.arrayBuffer();
+                const bytes = new Uint8Array(buf);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return {ok: true, status: r.status, body: btoa(binary)};
+            } catch(e) {
+                return {ok: false, error: e.name + ': ' + e.message};
+            }
+        }"""
+        lic_hdrs_clean = {
+            "content-type": "application/octet-stream",
+            "authorization": f"Bearer {jwt}",
+            "x-brand": "DAZN",
+            "x-daznid": dev_id,
+            "x-correlation-id": str(_uuid.uuid4()),
+        }
+
+        lr = None
+        if page:
             try:
-                await page.goto(fixture_url, wait_until="commit", timeout=5000)
-            except Exception:
-                pass
+                lr = await page.evaluate(js_lic_code, {"url": la_url, "headers": lic_hdrs_clean, "body": list(chal)})
+            except Exception as ex:
+                lr = {"ok": False, "error": f"Browser evaluate exception: {ex}"}
 
-            lr = await page.evaluate(
-                """({url, headers, body}) =>
-                    fetch(url, {method:"POST", headers, body: new Uint8Array(body)})
-                        .then(async r => ({ok: r.ok, status: r.status, body: btoa(String.fromCharCode(...new Uint8Array(await r.arrayBuffer())))}))
-                        .catch(e => ({ok: false, error: e.message}))
-                """,
-                {"url": la_url, "headers": lic_hdrs, "body": list(chal)}
-            )
-
-            if not lr.get("ok"):
-                self.result["error"] = f"Licenza: {lr.get('status','?')}"
-                cdm.close(sess)
-                return self.result
-
-            cdm.parse_license(sess, base64.b64decode(lr["body"]))
-            keys = [f"{k.kid.hex}:{k.key.hex()}" for k in cdm.get_keys(sess) if k.type == "CONTENT"]
-            cdm.close(sess)
-        else:
-            # MODALITA' VELOCE (curl_cffi / Direct HTTP)
+        if not lr or not lr.get("ok"):
+            # Tentativo con client HTTP curl_cffi
             client = await _get_http_session()
             try:
                 lic_resp = await client.post(la_url, headers=lic_hdrs, data=chal, timeout=10)
                 if lic_resp.status_code == 200:
-                    lr = {"ok": True, "body": lic_resp.content}
+                    lr = {"ok": True, "body": base64.b64encode(lic_resp.content).decode("ascii")}
                 else:
-                    lr = {"ok": False, "status": lic_resp.status_code}
+                    status_err = lic_resp.status_code
+                    body_err = lic_resp.text
+                    lr = {
+                        "ok": False,
+                        "status": status_err,
+                        "bodyText": body_err,
+                        "headers": dict(lic_resp.headers),
+                        "browser_res": lr
+                    }
             except Exception as e:
-                lr = {"ok": False, "error": str(e)}
+                if not lr:
+                    lr = {"ok": False, "error": str(e)}
 
-            if not lr.get("ok"):
-                # Fallback immediato nel browser se Direct HTTP riceve 403/errore
-                if page:
-                    try:
-                        lr_fb = await page.evaluate(
-                            """({url, headers, body}) =>
-                                fetch(url, {method:"POST", headers, body: new Uint8Array(body)})
-                                    .then(async r => ({ok: r.ok, status: r.status, body: btoa(String.fromCharCode(...new Uint8Array(await r.arrayBuffer())))}))
-                                    .catch(e => ({ok: false, error: e.message}))
-                            """,
-                            {"url": la_url, "headers": lic_hdrs, "body": list(chal)}
-                        )
-                        if lr_fb and lr_fb.get("ok"):
-                            lr = {"ok": True, "body": base64.b64decode(lr_fb["body"])}
-                    except Exception:
-                        pass
-
-            if not lr.get("ok"):
-                self.result["error"] = f"Licenza: {lr.get('status','?')} - {lr.get('error', '')}"
-                cdm.close(sess)
-                return self.result
-
-            cdm.parse_license(sess, lr["body"])
-            keys = [f"{k.kid.hex}:{k.key.hex()}" for k in cdm.get_keys(sess) if k.type == "CONTENT"]
+        if not lr or not lr.get("ok"):
+            err_msg = f"Licenza: {lr.get('status','?')} - Motivo: {lr.get('statusText', '')} {lr.get('bodyText', '')[:300]} {lr.get('error', '')}".strip()
+            self.result["error"] = err_msg
+            console.print(f"[bold red]  [Dettaglio Errore Licenza DRM][/bold red]")
+            console.print(f"    • Status HTTP: [bold yellow]{lr.get('status')}[/bold yellow]")
+            if lr.get("statusText"):
+                console.print(f"    • Status Text: {lr.get('statusText')}")
+            if lr.get("bodyText"):
+                console.print(f"    • Corpo Risposta Server: [dim]{lr.get('bodyText')[:400]}[/dim]")
+            if lr.get("error"):
+                console.print(f"    • Errore Exception: [red]{lr.get('error')}[/red]")
+            if lr.get("headers"):
+                server_hdr = lr.get("headers", {}).get("server") or lr.get("headers", {}).get("Server")
+                cf_id = lr.get("headers", {}).get("x-amz-cf-id")
+                console.print(f"    • Server: {server_hdr} (CF-ID: {cf_id})")
             cdm.close(sess)
+            return self.result
+
+        cdm.parse_license(sess, base64.b64decode(lr["body"]))
+        keys = [f"{k.kid.hex}:{k.key.hex()}" for k in cdm.get_keys(sess) if k.type == "CONTENT"]
+        cdm.close(sess)
         console.print(f"[dim]  → 6. Licenza DRM: {time.time() - _t:.2f}s[/dim]")
 
         if not keys:

@@ -5,26 +5,26 @@ CONFIG_FILE = Path(__file__).resolve().parent.parent / "config.json"
 
 DEFAULT_CONFIG = {
     "print_extension_link": True,
+    "github_deploy": True,
     "browser_timeout": 0,
     "debug_mode": False,
-    "extraction_engine": "curl_cffi",
-    "include_ua_curl": True,
-    "include_ua_headless": True,
+    "extraction_engine": "curl_cffi",  # "curl_cffi" oppure "headless"
+    "include_ua_curl": True,       # Includi UA nel JSON con metodo Veloce (curl_cffi)
+    "include_ua_headless": True,   # Includi UA nel JSON con metodo Headless (Playwright)
+    "download_vod_mp4": False,     # Scarica VOD in formato MP4 automaticamente
+    "site_api_url": "http://localhost:3000/api", # URL endpoint API del sito Next.js
+    "site_api_key": "zadonkais_secret_2026",    # Chiave segreta x-api-key
 }
 
 def load_config():
     if CONFIG_FILE.exists():
         try:
             data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+            # Update with missing defaults
             changed = False
             for k, v in DEFAULT_CONFIG.items():
                 if k not in data:
                     data[k] = v
-                    changed = True
-            # rimuovi chiavi legacy github
-            for legacy in ["github_deploy", "include_ua_in_json"]:
-                if legacy in data:
-                    del data[legacy]
                     changed = True
             if changed:
                 save_config(data)
@@ -34,13 +34,15 @@ def load_config():
     return DEFAULT_CONFIG.copy()
 
 def save_config(data):
-    CONFIG_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
 
-def get_setting(key, default=None):
-    return load_config().get(key, default if default is not None else DEFAULT_CONFIG.get(key))
+def get_setting(key):
+    return load_config().get(key, DEFAULT_CONFIG.get(key))
 
 def toggle_setting(key):
-    cfg = load_config()
-    cfg[key] = not cfg.get(key, DEFAULT_CONFIG.get(key, False))
-    save_config(cfg)
-    return cfg[key]
+    config = load_config()
+    if key in config and isinstance(config[key], bool):
+        config[key] = not config[key]
+        save_config(config)
+        return config[key]
+    return None
