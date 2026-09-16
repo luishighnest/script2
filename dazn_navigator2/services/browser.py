@@ -1,4 +1,4 @@
-﻿import asyncio, json, os, subprocess, sys
+import asyncio, json, os, subprocess, sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -97,16 +97,20 @@ class BrowserManager:
         except Exception:
             self._page = await self._context.new_page()
             cur = "about:blank"
-        if "dazn" not in cur:
+
+        # Se la pagina è su about:blank o non su DAZN, naviga su dazn.com prima di toccare localStorage
+        if "dazn.com" not in cur:
             try:
-                await self._page.goto("https://www.dazn.com/it-it", wait_until="domcontentloaded", timeout=15000)
-            except Exception:
-                pass
+                await self._page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
+                await asyncio.sleep(2)
+            except Exception as e:
+                print(f"[BrowserManager] Errore navigazione su DAZN: {e}")
+
         js_check = """
         (() => {
-            const tok = localStorage.getItem('MISL.authToken');
-            if (!tok) return false;
             try {
+                const tok = window.localStorage ? window.localStorage.getItem('MISL.authToken') : null;
+                if (!tok) return false;
                 let p = tok.split('.')[1];
                 p = p.replace(/-/g, '+').replace(/_/g, '/');
                 while (p.length % 4) p += '=';
@@ -119,18 +123,30 @@ class BrowserManager:
             is_valid = await self._page.evaluate(js_check)
         except Exception:
             is_valid = False
+
         if not is_valid:
             try:
-                await self._page.goto("https://www.dazn.com/it-it", wait_until="domcontentloaded", timeout=15000)
+                await self._page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
                 await asyncio.sleep(2)
             except Exception:
                 pass
 
     async def evaluate(self, js: str):
+        await self.ensure_session()
         if self._page is None:
             pages = self._context.pages
             self._page = pages[0] if pages else await self._context.new_page()
-        return await self._page.evaluate(js)
+        # Wrapper sicuro per evitare SecurityError se evaluate accede a localStorage
+        safe_js = f"""
+        (() => {{
+            try {{
+                return (eval({json.dumps(js)}));
+            }} catch(e) {{
+                return null;
+            }}
+        }})()
+        """
+        return await self._page.evaluate(safe_js)
 
     async def fetch_json(self, url: str, method: str = "GET", body: dict = None, headers: dict = None) -> dict:
         h = dict(headers or {})

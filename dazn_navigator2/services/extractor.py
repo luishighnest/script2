@@ -72,19 +72,54 @@ class HeadlessExtractor:
         DEVICE_ID_FILE.write_text(did)
         return did
 
-    async def _get_page_and_jwt(self):
-        """Recupera il page object e JWT dal BrowserManager già attivo."""
+    def _read_jwt_from_disk(self, profile_dir: Path) -> str:
+        if not profile_dir or not Path(profile_dir).exists():
+            return ""
+        p = Path(profile_dir)
+        leveldb_dirs = [
+            p / "Default" / "Local Storage" / "leveldb",
+            p / "Local Storage" / "leveldb",
+            p / "leveldb"
+        ]
+        for ldir in leveldb_dirs:
+            if ldir.exists():
+                for f in sorted(ldir.glob("*.ldb"), key=lambda x: x.stat().st_mtime, reverse=True):
+                    try:
+                        data = f.read_bytes()
+                        if b"MISL.authToken" in data:
+                            idx = data.find(b"eyJ")
+                            if idx != -1:
+                                end = data.find(b'"', idx)
+                                if end == -1:
+                                    end = data.find(b'\x00', idx)
+                                if end != -1:
+                                    cand = data[idx:end].decode('utf-8', errors='ignore')
+                                    if cand.startswith("eyJ") and cand.count(".") == 2:
+                                        return cand
+                    except Exception:
+                        pass
+        return ""
+
+    async def _get_page_and_jwt(self, profile_dir=None):
+        """Recupera il page object e JWT dal BrowserManager o direttamente dal profilo."""
         import base64 as _b64
-        from dazn_navigator2.services.browser import get_browser
+        from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
+        if profile_dir:
+            set_active_profile_dir(Path(profile_dir))
+
         b = await get_browser()
         jwt = await b.evaluate("localStorage.getItem('MISL.authToken')")
         if not jwt or not jwt.startswith("eyJ"):
             await b.ensure_session()
             jwt = await b.evaluate("localStorage.getItem('MISL.authToken')")
-        if not jwt or not jwt.startswith("eyJ"):
-            raise RuntimeError("JWT non trovato nel browser attivo.")
 
-        # Estrae il deviceId direttamente dal payload JWT (sempre coincide con quello DAZN)
+        # Fallback se evaluate non trova il token nel DOM (es. document SecurityError)
+        if not jwt or not jwt.startswith("eyJ"):
+            jwt = self._read_jwt_from_disk(profile_dir)
+
+        if not jwt or not jwt.startswith("eyJ"):
+            raise RuntimeError("JWT non trovato nel profilo DAZN. Assicurati che l'account sia loggato nel profilo.")
+
         try:
             parts = jwt.split(".")
             pad = parts[1] + "=" * (-len(parts[1]) % 4)
@@ -95,7 +130,6 @@ class HeadlessExtractor:
         except Exception:
             pass
 
-        # Fallback: prova localStorage se il JWT non contiene deviceId
         if not getattr(self, "_real_device_id", None):
             try:
                 stored_did = await b.evaluate("localStorage.getItem('MISL.deviceId') || localStorage.getItem('dazn.deviceId')")
@@ -206,7 +240,7 @@ class HeadlessExtractor:
 
         import time
         _t = time.time()
-        page, jwt = await self._get_page_and_jwt()
+        page, jwt = await self._get_page_and_jwt(profile_dir)
         console.print(f"[dim]  → 1. Get JWT: {time.time() - _t:.2f}s[/dim]")
 
         # Startup API (chiamata solo se non già in cache)
