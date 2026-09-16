@@ -1,4 +1,4 @@
-from dazn_navigator2.config import settings
+﻿from dazn_navigator2.config import settings
 from dazn_navigator2.services.browser import get_browser
 from dazn_navigator2.services.extractor import _get_http_session
 
@@ -26,8 +26,24 @@ class DaznClient:
             qs = "&".join(f"{k}={v}" for k, v in params.items())
             url += "?" + qs
         
+        # Prova prima chiamata diretta pubblica anonima senza forzare avvio browser se non necessario
+        try:
+            session = await _get_http_session()
+            headers = {
+                "accept": "application/json",
+                "origin": "https://www.dazn.com",
+                "referer": "https://www.dazn.com/"
+            }
+            resp = await session.get(url, headers=headers, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data and ("Tiles" in data or "Rails" in data):
+                    return data
+        except Exception:
+            pass
+
+        # Se serve token o fallback, usa il browser
         b = await get_browser()
-        # Assicura che il browser sia su una pagina DAZN valida prima di accedere a localStorage
         await b.ensure_session()
         jwt = await self._get_jwt(b)
 

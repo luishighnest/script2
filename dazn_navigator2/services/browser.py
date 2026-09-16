@@ -1,9 +1,17 @@
-import asyncio, json, os, subprocess
+﻿import asyncio, json, os, subprocess, sys
 from pathlib import Path
 
-PROFILE_DIR = Path(__file__).resolve().parent.parent.parent / "chrome_profile"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CDP_PORT = 9222
 
+_current_profile_dir = BASE_DIR / "chrome_profile"
+
+def set_active_profile_dir(p: Path):
+    global _current_profile_dir
+    _current_profile_dir = Path(p)
+
+def get_active_profile_dir() -> Path:
+    return _current_profile_dir
 
 class BrowserManager:
     def __init__(self):
@@ -11,18 +19,44 @@ class BrowserManager:
         self._page = None
         self._playwright = None
 
-    async def start(self):
+    async def start(self, user_data_dir: Path = None):
         from playwright.async_api import async_playwright
         self._playwright = await async_playwright().start()
+        
+        p_dir = user_data_dir or get_active_profile_dir()
+        p_dir.mkdir(parents=True, exist_ok=True)
+
+        launch_args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-blink-features=AutomationControlled',
+            '--no-first-run'
+        ]
+
+        try:
+            # Avvio context persistente con Chromium nativo di Playwright
+            self._context = await self._playwright.chromium.launch_persistent_context(
+                user_data_dir=str(p_dir),
+                headless=True,
+                args=launch_args,
+                viewport={"width": 1280, "height": 720}
+            )
+            pages = self._context.pages
+            self._page = pages[0] if pages else await self._context.new_page()
+            return
+        except Exception as e:
+            print(f"[BrowserManager] launch_persistent_context fallito: {e}, fallback su subprocess")
+
+        # Fallback secondario: subprocess + CDP
         browser = await self._try_connect_cdp()
         if browser is None:
-            browser = await self._launch_chrome()
+            browser = await self._launch_chrome(p_dir)
             if browser is None:
                 raise RuntimeError("Impossibile avviare o connettersi a Chrome.")
         self._context = browser.contexts[0]
         pages = self._context.pages
         self._page = pages[0] if pages else await self._context.new_page()
-        await self._page.wait_for_load_state("domcontentloaded")
 
     async def _try_connect_cdp(self):
         try:
@@ -31,19 +65,21 @@ class BrowserManager:
         except Exception:
             return None
 
-    async def _launch_chrome(self):
-        chrome_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-        if not os.path.exists(chrome_path):
-            chrome_path = "msedge"
+    async def _launch_chrome(self, profile_dir: Path):
+        chrome_bin = "chromium"
+        if sys.platform == "win32":
+            chrome_bin = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+            if not os.path.exists(chrome_bin):
+                chrome_bin = "msedge"
         try:
             subprocess.Popen(
-                [chrome_path, '--headless=new', f'--remote-debugging-port={CDP_PORT}',
-                 f'--user-data-dir={PROFILE_DIR}', '--no-first-run',
+                [chrome_bin, '--headless=new', f'--remote-debugging-port={CDP_PORT}',
+                 f'--user-data-dir={profile_dir}', '--no-first-run', '--no-sandbox',
                  '--log-level=3', '--disable-logging',
                  '--disable-blink-features=AutomationControlled', 'about:blank'],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-            for _ in range(30):
+            for _ in range(20):
                 await asyncio.sleep(1)
                 browser = await self._try_connect_cdp()
                 if browser:
@@ -62,7 +98,10 @@ class BrowserManager:
             self._page = await self._context.new_page()
             cur = "about:blank"
         if "dazn" not in cur:
-            await self._page.goto("https://www.dazn.com/it-it", wait_until="load", timeout=0)
+            try:
+                await self._page.goto("https://www.dazn.com/it-it", wait_until="domcontentloaded", timeout=15000)
+            except Exception:
+                pass
         js_check = """
         (() => {
             const tok = localStorage.getItem('MISL.authToken');
@@ -81,10 +120,16 @@ class BrowserManager:
         except Exception:
             is_valid = False
         if not is_valid:
-            await self._page.goto("https://www.dazn.com/it-it", wait_until="networkidle", timeout=0)
-            await asyncio.sleep(2)
+            try:
+                await self._page.goto("https://www.dazn.com/it-it", wait_until="domcontentloaded", timeout=15000)
+                await asyncio.sleep(2)
+            except Exception:
+                pass
 
     async def evaluate(self, js: str):
+        if self._page is None:
+            pages = self._context.pages
+            self._page = pages[0] if pages else await self._context.new_page()
         return await self._page.evaluate(js)
 
     async def fetch_json(self, url: str, method: str = "GET", body: dict = None, headers: dict = None) -> dict:
@@ -123,17 +168,23 @@ class BrowserManager:
         return self._context
 
     async def close(self):
+        if self._context:
+            try:
+                await self._context.close()
+            except Exception:
+                pass
         if self._playwright:
-            await self._playwright.stop()
+            try:
+                await self._playwright.stop()
+            except Exception:
+                pass
         self._context = None
         self._page = None
         self._playwright = None
 
-
 _browser = None
 
-
-async def get_browser() -> BrowserManager:
+async def get_browser(user_data_dir: Path = None) -> BrowserManager:
     global _browser
     if _browser is not None:
         try:
@@ -148,9 +199,8 @@ async def get_browser() -> BrowserManager:
             pass
         _browser = None
     _browser = BrowserManager()
-    await _browser.start()
+    await _browser.start(user_data_dir=user_data_dir)
     return _browser
-
 
 async def close_browser():
     global _browser
