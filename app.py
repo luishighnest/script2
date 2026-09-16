@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 import os
 import sys
@@ -11,10 +11,30 @@ from flask import Flask, render_template, jsonify, request, Response, session, r
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
+import threading
 from dazn_navigator2.cli.eventi_cmds import _load, _save, add_event
 from dazn_navigator2.services.explorer import DaznExplorer
 from dazn_navigator2.services.extractor import HeadlessExtractor
 from dazn_navigator2.services.browser import BrowserManager
+
+# Event loop persistente su thread dedicato per evitare 'Future attached to a different loop'
+_ASYNC_LOOP = None
+_ASYNC_THREAD = None
+_LOOP_LOCK = threading.Lock()
+
+def _start_background_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+def run_async(coro, timeout=90):
+    global _ASYNC_LOOP, _ASYNC_THREAD
+    with _LOOP_LOCK:
+        if _ASYNC_LOOP is None or not _ASYNC_LOOP.is_running():
+            _ASYNC_LOOP = asyncio.new_event_loop()
+            _ASYNC_THREAD = threading.Thread(target=_start_background_loop, args=(_ASYNC_LOOP,), daemon=True)
+            _ASYNC_THREAD.start()
+    future = asyncio.run_coroutine_threadsafe(coro, _ASYNC_LOOP)
+    return future.result(timeout=timeout)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dazn-secret-auth-key-2026")
@@ -236,7 +256,7 @@ def get_live_events():
         return items
 
     try:
-        data = asyncio.run(_fetch())
+        data = run_async(_fetch(), timeout=45)
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -272,7 +292,7 @@ def extract_stream():
         return res
 
     try:
-        result = asyncio.run(_do_extract())
+        result = run_async(_do_extract(), timeout=90)
         return jsonify(result)
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500

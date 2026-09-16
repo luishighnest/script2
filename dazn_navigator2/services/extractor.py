@@ -54,7 +54,12 @@ _CACHED_CDM = None
 
 async def _get_http_session():
     global _GLOBAL_SESSION
-    if _GLOBAL_SESSION is None:
+    try:
+        cur_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        cur_loop = None
+    sess_loop = getattr(_GLOBAL_SESSION, "_loop", None)
+    if _GLOBAL_SESSION is None or (cur_loop is not None and sess_loop is not None and sess_loop != cur_loop):
         from curl_cffi.requests import AsyncSession
         _GLOBAL_SESSION = AsyncSession(impersonate="chrome131")
     return _GLOBAL_SESSION
