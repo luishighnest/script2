@@ -378,10 +378,35 @@ class DaznExplorer:
         return items
 
     async def search(self, query: str) -> List[ContentTile]:
+        import urllib.parse
+        from dazn_navigator2.services.extractor import _get_http_session
+        url = f"https://search.discovery.indazn.com/v1/search?searchTerm={urllib.parse.quote(query)}&country=it&brand=dazn"
+        try:
+            client = await _get_http_session()
+            resp = await client.get(url, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                items = []
+                for cat in data.get("Results", []):
+                    for t in cat.get("Tiles", []):
+                        items.append(ContentTile(
+                            id=t.get("Id", ""),
+                            asset_id=t.get("AssetId", "") or t.get("Id", ""),
+                            title=t.get("Title", "Risultato"),
+                            description=t.get("Description", ""),
+                            section="Ricerca",
+                            tile_type=t.get("Type", "Unknown"),
+                            image=t.get("Image", "") or "",
+                            raw=t,
+                        ))
+                if items:
+                    return items
+        except Exception:
+            pass
+
         from dazn_navigator2.services.browser import get_browser
         b = await get_browser()
         await b.ensure_session()
-        url = f"https://search.discovery.indazn.com/v1/search?searchTerm={query}&country=it&brand=dazn"
         result = await b.fetch_json(url)
         if not result.get("ok"):
             return []

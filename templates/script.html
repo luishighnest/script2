@@ -168,18 +168,40 @@
                 <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="showZipSetup()">Carica nuovo .zip</button>
             </div>
 
-            <ul class="nav nav-pills mb-4" id="viewTabs" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link active" id="extracted-tab" data-bs-toggle="tab" data-bs-target="#extracted-pane">
-                        <i class="fa-solid fa-list-check me-2"></i>Eventi Estratti (<span id="count-extracted">0</span>)
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <ul class="nav nav-pills" id="viewTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="extracted-tab" data-bs-toggle="tab" data-bs-target="#extracted-pane" onclick="loadExtracted()">
+                            <i class="fa-solid fa-list-check me-2"></i>Eventi Estratti (<span id="count-extracted">0</span>)
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-pane" onclick="loadLive()">
+                            <i class="fa-solid fa-tower-broadcast me-2"></i>Live Disponibili
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="vod-tab" data-bs-toggle="tab" data-bs-target="#vod-pane" onclick="loadVod()">
+                            <i class="fa-solid fa-film me-2"></i>VOD / On-Demand
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-pane">
+                            <i class="fa-solid fa-magnifying-glass me-2"></i>Cerca Evento
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Pulsanti Azione Rapida Eventi Estratti -->
+                <div id="events-actions-bar" class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-light" onclick="sortEvents()" title="Ordina per data di inizio">
+                        <i class="fa-solid fa-arrow-down-short-wide me-1"></i> Ordina per data
                     </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-pane" onclick="loadLive()">
-                        <i class="fa-solid fa-tower-broadcast me-2"></i>Live Disponibili
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAllEvents()" title="Elimina tutti gli eventi">
+                        <i class="fa-solid fa-trash-can me-1"></i> Elimina Tutti
                     </button>
-                </li>
-            </ul>
+                </div>
+            </div>
 
             <div class="tab-content" id="myTabContent">
                 <!-- PANE 1: EVENTI ESTRATTI -->
@@ -201,6 +223,35 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- PANE 3: VOD / ON-DEMAND -->
+                <div class="tab-pane fade" id="vod-pane">
+                    <div class="row g-3" id="vod-container">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-info" role="status"></div>
+                            <p class="mt-2 text-muted">Caricamento catalogo VOD / On-Demand...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 4: CERCA EVENTO -->
+                <div class="tab-pane fade" id="search-pane">
+                    <div class="card-event p-4 mb-4">
+                        <form onsubmit="handleSearch(event)">
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" id="search-input" class="form-control bg-dark text-white border-secondary" placeholder="Cerca squadra, sport, campionato (es. Inter, Juventus, Motogp, Tennis, NFL)..." autocomplete="off">
+                                <button type="submit" class="btn btn-dazn px-4"><i class="fa-solid fa-search me-1"></i> Cerca</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="row g-3" id="search-container">
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="fa-solid fa-magnifying-glass fa-3x mb-3 text-secondary"></i>
+                            <p>Digita una parola chiave sopra per cercare tra tutti i contenuti ed eventi DAZN.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -216,6 +267,32 @@
                 <div class="modal-body" id="modalBody">
                     ...
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Rinomina Evento -->
+    <div class="modal fade" id="renameModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fa-solid fa-pen me-2 text-warning"></i>Rinomina Evento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form onsubmit="submitRename(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="rename-comp">
+                        <input type="hidden" id="rename-index">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Nuovo Titolo:</label>
+                            <input type="text" id="rename-title-input" class="form-control bg-dark text-white border-secondary" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-sm btn-dazn">Salva Modifica</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -303,6 +380,8 @@
             }
         }
 
+        const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+
         async function loadExtracted() {
             try {
                 const res = await fetch('/api/events');
@@ -312,7 +391,7 @@
                 
                 const entries = [];
                 for (const [comp, items] of Object.entries(data)) {
-                    items.forEach(ev => entries.push({ comp, ...ev }));
+                    items.forEach((ev, idx) => entries.push({ comp, idx, ...ev }));
                 }
 
                 document.getElementById('count-extracted').innerText = entries.length;
@@ -321,7 +400,7 @@
                     container.innerHTML = `
                         <div class="col-12 text-center py-5 text-muted">
                             <i class="fa-regular fa-folder-open fa-3x mb-3"></i>
-                            <p>Nessun evento salvato. Vai su "Live Disponibili" per estrarre uno stream.</p>
+                            <p>Nessun evento salvato. Vai su "Live Disponibili", "VOD" o "Cerca Evento" per estrarre uno stream.</p>
                         </div>
                     `;
                     return;
@@ -340,14 +419,22 @@
                             <p class="text-secondary small mb-2"><i class="fa-regular fa-clock me-1"></i> Inizio: ${ev.start || 'N/D'}</p>
                             <div class="key-box mb-3">
                                 <div class="text-muted small">KID:KEY</div>
-                                <div>${ev.keys || 'N/A'}</div>
+                                <div>${ev.keys || ev.key || 'N/A'}</div>
                             </div>
-                            <div class="mt-auto d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-warning w-50" onclick='copyText("${ev.manifest || ''}", "Manifest MPD copiato!")'>
+                            <div class="d-flex gap-2 mb-2">
+                                <button class="btn btn-sm btn-outline-warning w-50" onclick='copyText("${ev.manifest || ev.mpd || ''}", "Manifest MPD copiato!")'>
                                     <i class="fa-solid fa-copy me-1"></i> MPD
                                 </button>
-                                <button class="btn btn-sm btn-outline-info w-50" onclick='copyText("${ev.keys || ''}", "Chiavi copiate!")'>
+                                <button class="btn btn-sm btn-outline-info w-50" onclick='copyText("${ev.keys || ev.key || ''}", "Chiavi copiate!")'>
                                     <i class="fa-solid fa-key me-1"></i> Key
+                                </button>
+                            </div>
+                            <div class="mt-auto pt-2 border-top border-secondary d-flex justify-content-between align-items-center">
+                                <button class="btn btn-sm btn-outline-light py-0 px-2" onclick="openRenameModal('${encodeURIComponent(ev.comp)}', ${ev.idx}, '${encodeURIComponent(ev.name || '')}')">
+                                    <i class="fa-solid fa-pen me-1"></i> Rinomina
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteEvent('${encodeURIComponent(ev.comp)}', ${ev.idx})">
+                                    <i class="fa-solid fa-trash me-1"></i> Elimina
                                 </button>
                             </div>
                         </div>
@@ -358,6 +445,176 @@
                 console.error(err);
                 document.getElementById('extracted-container').innerHTML = `<div class="col-12 text-danger text-center">Errore nel caricamento: ${err.message}</div>`;
             }
+        }
+
+        function openRenameModal(encodedComp, index, encodedName) {
+            document.getElementById('rename-comp').value = decodeURIComponent(encodedComp);
+            document.getElementById('rename-index').value = index;
+            document.getElementById('rename-title-input').value = decodeURIComponent(encodedName);
+            renameModal.show();
+        }
+
+        async function submitRename(e) {
+            e.preventDefault();
+            const comp = document.getElementById('rename-comp').value;
+            const index = document.getElementById('rename-index').value;
+            const new_name = document.getElementById('rename-title-input').value.trim();
+            if (!new_name) return;
+
+            try {
+                const res = await fetch('/api/events/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comp, index, new_name })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    renameModal.hide();
+                    loadExtracted();
+                } else {
+                    alert("Errore nella rinomina: " + (data.error || "Sconosciuto"));
+                }
+            } catch (err) {
+                alert("Errore nella richiesta: " + err.message);
+            }
+        }
+
+        async function deleteEvent(encodedComp, index) {
+            const comp = decodeURIComponent(encodedComp);
+            if (!confirm(`Sei sicuro di voler eliminare questo evento da "${comp}"?`)) return;
+
+            try {
+                const res = await fetch('/api/events/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comp, index })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    loadExtracted();
+                } else {
+                    alert("Errore: " + (data.error || "Impossibile eliminare"));
+                }
+            } catch (err) {
+                alert("Errore di connessione: " + err.message);
+            }
+        }
+
+        async function deleteAllEvents() {
+            if (!confirm("ATTENZIONE: Sei sicuro di voler eliminare TUTTI gli eventi salvati?")) return;
+            try {
+                const res = await fetch('/api/events/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ all: true })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    loadExtracted();
+                } else {
+                    alert("Errore: " + (data.error || "Impossibile eliminare"));
+                }
+            } catch (err) {
+                alert("Errore di connessione: " + err.message);
+            }
+        }
+
+        async function sortEvents() {
+            try {
+                const res = await fetch('/api/events/sort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    loadExtracted();
+                } else {
+                    alert("Errore nel riordino: " + (data.error || "Sconosciuto"));
+                }
+            } catch (err) {
+                alert("Errore di rete: " + err.message);
+            }
+        }
+
+        async function loadVod() {
+            const container = document.getElementById('vod-container');
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted">Caricamento contenuti On-Demand / Replay...</p>
+                </div>
+            `;
+            try {
+                const res = await fetch('/api/vod');
+                const tiles = await res.json();
+                renderTileGrid(tiles, container, 'vod');
+            } catch (err) {
+                container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore caricamento VOD: ${err.message}</div>`;
+            }
+        }
+
+        async function handleSearch(e) {
+            if (e) e.preventDefault();
+            const q = document.getElementById('search-input').value.trim();
+            if (!q) return;
+
+            const container = document.getElementById('search-container');
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-warning" role="status"></div>
+                    <p class="mt-2 text-muted">Ricerca di "${q}" tra gli eventi e contenuti DAZN...</p>
+                </div>
+            `;
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                const tiles = await res.json();
+                if (Array.isArray(tiles) && tiles.length === 0) {
+                    container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun risultato trovato per "${q}".</div>`;
+                    return;
+                }
+                renderTileGrid(tiles, container, 'search');
+            } catch (err) {
+                container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore durante la ricerca: ${err.message}</div>`;
+            }
+        }
+
+        function renderTileGrid(tiles, container, contextType) {
+            container.innerHTML = '';
+            if (!Array.isArray(tiles)) {
+                container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore nel caricamento: ${tiles.error || JSON.stringify(tiles)}</div>`;
+                return;
+            }
+
+            if (tiles.length === 0) {
+                container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun contenuto disponibile in questa sezione.</div>`;
+                return;
+            }
+
+            tiles.forEach(t => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4';
+                const badgeColor = contextType === 'vod' ? 'bg-primary' : (contextType === 'search' ? 'bg-secondary' : 'badge-live');
+                const badgeText = contextType === 'vod' ? 'VOD / REPLAY' : (contextType === 'search' ? 'RISULTATO' : 'LIVE');
+                col.innerHTML = `
+                    <div class="card-event">
+                        ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
+                        <div class="p-3 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge ${badgeColor}">${badgeText}</span>
+                                <small class="text-secondary">${t.sport || ''}</small>
+                            </div>
+                            <h6 class="fw-bold mb-2 text-white">${t.title}</h6>
+                            <p class="text-secondary small mb-3">${t.competition || ''}</p>
+                            <div class="mt-auto">
+                                <button class="btn btn-dazn w-100" onclick="extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}')">
+                                    <i class="fa-solid fa-bolt me-1"></i> Estrai Flusso
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
         }
 
         async function loadLive() {
@@ -371,41 +628,7 @@
             try {
                 const res = await fetch('/api/live');
                 const tiles = await res.json();
-                container.innerHTML = '';
-
-                if (!Array.isArray(tiles)) {
-                    container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore nel caricamento: ${tiles.error || JSON.stringify(tiles)}</div>`;
-                    return;
-                }
-
-                if (tiles.length === 0) {
-                    container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun evento Live trovato in questo momento.</div>`;
-                    return;
-                }
-
-                tiles.forEach(t => {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-6 col-lg-4';
-                    col.innerHTML = `
-                        <div class="card-event">
-                            ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
-                            <div class="p-3 d-flex flex-column flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge badge-live">LIVE</span>
-                                    <small class="text-secondary">${t.sport || ''}</small>
-                                </div>
-                                <h6 class="fw-bold mb-2 text-white">${t.title}</h6>
-                                <p class="text-secondary small mb-3">${t.competition || ''}</p>
-                                <div class="mt-auto">
-                                    <button class="btn btn-dazn w-100" onclick="extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}')">
-                                        <i class="fa-solid fa-bolt me-1"></i> Estrai Flusso
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(col);
-                });
+                renderTileGrid(tiles, container, 'live');
             } catch (err) {
                 container.innerHTML = `<div class="col-12 text-danger text-center">Errore nel recupero Live: ${err.message}</div>`;
             }

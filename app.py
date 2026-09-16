@@ -225,6 +225,68 @@ def get_saved_events():
         return jsonify({"error": "Non autenticato"}), 401
     return jsonify(_load())
 
+@app.route("/api/events/rename", methods=["POST"])
+def rename_saved_event():
+    if "user_profile_id" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+    body = request.get_json() or {}
+    comp = body.get("comp")
+    index = body.get("index")
+    new_name = (body.get("new_name") or "").strip()
+    if not comp or index is None or not new_name:
+        return jsonify({"ok": False, "error": "Parametri non validi"}), 400
+    
+    data = _load()
+    if comp in data and 0 <= int(index) < len(data[comp]):
+        data[comp][int(index)]["name"] = new_name
+        _save(data)
+        sync_to_github(f"edit: rinomina evento {new_name}")
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Evento non trovato"}), 404
+
+@app.route("/api/events/delete", methods=["POST"])
+def delete_saved_event():
+    if "user_profile_id" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+    body = request.get_json() or {}
+    if body.get("all"):
+        _save({})
+        sync_to_github("edit: cancellati tutti gli eventi")
+        return jsonify({"ok": True})
+    
+    comp = body.get("comp")
+    index = body.get("index")
+    if not comp or index is None:
+        return jsonify({"ok": False, "error": "Parametri mancanti"}), 400
+    
+    data = _load()
+    if comp in data and 0 <= int(index) < len(data[comp]):
+        del data[comp][int(index)]
+        if not data[comp]:
+            del data[comp]
+        _save(data)
+        sync_to_github(f"edit: rimosso evento da {comp}")
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Evento non trovato"}), 404
+
+@app.route("/api/events/sort", methods=["POST"])
+def sort_saved_events():
+    if "user_profile_id" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+    from dazn_navigator2.cli.eventi_cmds import _iter_entries, _sort_key
+    data = _load()
+    entries = list(_iter_entries(data))
+    if not entries:
+        return jsonify({"ok": True})
+    
+    ordinato = sorted(entries, key=_sort_key)
+    nuovo_data = {}
+    for _, comp, _, ev_ in ordinato:
+        nuovo_data.setdefault(comp, []).append(ev_)
+    _save(nuovo_data)
+    sync_to_github("edit: eventi riordinati per data")
+    return jsonify({"ok": True})
+
 @app.route("/api/live", methods=["GET"])
 def get_live_events():
     if "user_profile_id" not in session:
@@ -233,6 +295,82 @@ def get_live_events():
     async def _fetch():
         explorer = DaznExplorer()
         tiles = await explorer.get_tiles("Live")
+        items = []
+        for t in tiles:
+            raw = t.raw or {}
+            sport = raw.get("Sport", {})
+            if isinstance(sport, dict):
+                sport = sport.get("Title", "")
+            comp = raw.get("Competition", {})
+            if isinstance(comp, dict):
+                comp = comp.get("Title", "")
+
+            items.append({
+                "id": t.id,
+                "asset_id": t.asset_id or t.id,
+                "title": t.title,
+                "sport": sport,
+                "competition": comp,
+                "image": _image_url(t.image),
+                "tile_type": t.tile_type
+            })
+        await explorer.close()
+        return items
+
+    try:
+        data = run_async(_fetch(), timeout=45)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/vod", methods=["GET"])
+def get_vod_events():
+    if "user_profile_id" not in session:
+        return jsonify({"error": "Non autenticato"}), 401
+
+    async def _fetch():
+        explorer = DaznExplorer()
+        tiles = await explorer.get_tiles("Catchup")
+        items = []
+        for t in tiles:
+            raw = t.raw or {}
+            sport = raw.get("Sport", {})
+            if isinstance(sport, dict):
+                sport = sport.get("Title", "")
+            comp = raw.get("Competition", {})
+            if isinstance(comp, dict):
+                comp = comp.get("Title", "")
+
+            items.append({
+                "id": t.id,
+                "asset_id": t.asset_id or t.id,
+                "title": t.title,
+                "sport": sport,
+                "competition": comp,
+                "image": _image_url(t.image),
+                "tile_type": t.tile_type
+            })
+        await explorer.close()
+        return items
+
+    try:
+        data = run_async(_fetch(), timeout=45)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/search", methods=["GET"])
+def search_events():
+    if "user_profile_id" not in session:
+        return jsonify({"error": "Non autenticato"}), 401
+
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify([])
+
+    async def _fetch():
+        explorer = DaznExplorer()
+        tiles = await explorer.search(q)
         items = []
         for t in tiles:
             raw = t.raw or {}
