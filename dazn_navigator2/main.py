@@ -8,7 +8,13 @@ from rich.prompt import Prompt
 import signal
 import os
 
+# Gestione immediata e silenziosa di SIGINT (Ctrl+C)
 def _sigint_handler(sig, frame):
+    try:
+        from dazn_navigator2.services.browser import _GLOBAL_BROWSER
+        # Chiudi senza stampare trace
+    except Exception:
+        pass
     os._exit(0)
 
 signal.signal(signal.SIGINT, _sigint_handler)
@@ -87,118 +93,50 @@ def main_menu(ctx: typer.Context):
 
     while True:
         status = profile_status()
-        menu = f"""[bold yellow]── Navigazione contenuti ──[/bold yellow]
-[bold cyan]1.[/bold cyan]  🔴 Eventi Live (In Diretta)
-[bold cyan]2.[/bold cyan]  ⏰ Eventi In Programma (Prossimi Eventi & Live)
-[bold cyan]3.[/bold cyan]  ⏮️ Contenuti VOD (On-Demand & Replay)
-[bold cyan]4.[/bold cyan]  📺 Canali Lineari (DAZN TV, Eurosport, ecc.)
-[bold cyan]5.[/bold cyan]  🏆 Esplora per Sport & Categorie (Serie A, LaLiga, Basket, NFL, Boxe...)
-[bold cyan]6.[/bold cyan]  📅 Guida TV & Palinsesto
-[bold cyan]7.[/bold cyan]  🔍 Cerca un Evento
-
-[bold yellow]── Eventi sito ──[/bold yellow]
-[bold cyan]8.[/bold cyan]  Eventi (test.json)
-[bold cyan]9.[/bold cyan]  Aggiungi evento manuale a test.json (EVENTI)
-[bold cyan]10.[/bold cyan] Importa eventi Live da Heroku a test.json (EVENTI)
-[bold cyan]11.[/bold cyan] Sky sito
-[bold cyan]12.[/bold cyan] Sky2 sito
-
-[bold yellow]── Account & Test ──[/bold yellow]
-[bold cyan]13.[/bold cyan] Impostazioni
-[bold cyan]14.[/bold cyan] {status}
-[bold cyan]15.[/bold cyan] Logout
-[bold cyan]16.[/bold cyan] Estrai e pubblica da kodi.log
-[bold cyan]17.[/bold cyan] 🌐 Repository GitHub
-
-[bold yellow]── Amazon ──[/bold yellow]
-[bold cyan]18.[/bold cyan] 🎬 Amazon Prime Video (Login & Estrazione)"""
+        menu = f"""[bold cyan]1.[/bold cyan]  Eventi Live
+[bold cyan]2.[/bold cyan]  Contenuti VOD (On-Demand)
+[bold cyan]3.[/bold cyan]  Canali Lineari (DAZN TV)
+[bold cyan]4.[/bold cyan]  Cerca un Evento
+[bold cyan]5.[/bold cyan]  Eventi
+[bold cyan]6.[/bold cyan]  Impostazioni
+[bold cyan]7.[/bold cyan]  {status}
+[bold cyan]8.[/bold cyan]  Logout"""
 
         console.print("\n")
         console.print(Panel(menu, title="[bold magenta]DAZN[/bold magenta]", expand=False))
         try:
             scelta = Prompt.ask("Scegli un'opzione", default="")
         except (KeyboardInterrupt, Exception):
-            import os
             os._exit(0)
 
         if scelta == "1":
             run_async(events_cmds.quick_navigate("Live", "Eventi Live"))
         elif scelta == "2":
-            run_async(events_cmds.quick_navigate("upcoming", "Eventi In Programma"))
-        elif scelta == "3":
             run_async(events_cmds.quick_navigate("Catchup", "Contenuti VOD (On-Demand)"))
-        elif scelta == "4":
+        elif scelta == "3":
             run_async(events_cmds.quick_navigate("epg", "Canali Lineari (DAZN TV)"))
-        elif scelta == "5":
-            run_async(events_cmds.navigate())
-        elif scelta == "6":
-            run_async(events_cmds.quick_navigate("Livetvschedule", "Guida TV & Palinsesto"))
-        elif scelta == "7":
+        elif scelta == "4":
             run_async(events_cmds.quick_search())
-        elif scelta == "8":
+        elif scelta == "5":
             from dazn_navigator2.cli.eventi_cmds import manage_events
             manage_events()
-        elif scelta == "9":
-            from dazn_navigator2.cli.aggiungi_cmds import aggiungi_da_link
-            aggiungi_da_link()
-        elif scelta == "10":
-            try:
-                from dazn_navigator2.cli.heroku_eventi_cmds import importa_eventi_da_heroku
-                importa_eventi_da_heroku()
-            except Exception as e:
-                console.print(f"[red]Errore durante l'importazione da Heroku: {e}[/red]")
-        elif scelta == "11":
-            try:
-                from dazn_navigator2.cli.sky_cmds import sync_sky_site
-                sync_sky_site()
-            except Exception as e:
-                console.print(f"[red]Errore durante la sincronizzazione: {e}[/red]")
-        elif scelta == "12":
-            try:
-                from dazn_navigator2.cli.sky2_cmds import sync_sky2_site
-                sync_sky2_site()
-            except Exception as e:
-                console.print(f"[red]Errore durante la sincronizzazione: {e}[/red]")
-        elif scelta == "13":
+        elif scelta == "6":
             from dazn_navigator2.cli.settings_cmds import settings_menu
             settings_menu()
-        elif scelta == "14":
-            console.print(f"Stato sessione: {status}")
-        elif scelta == "15":
-            from dazn_navigator2.auth.auth import logout
-            logout()
-        elif scelta == "16":
-            from dazn_navigator2.cli.kodi_log_cmds import estrai_da_kodi_log
-            estrai_da_kodi_log()
-        elif scelta == "17":
-            import webbrowser
-            sub_menu = f"""[bold cyan]1.[/bold cyan] 📦 luishighnest/kodi
-[bold cyan]2.[/bold cyan] 🌐 luishighnest/zadonkais
-[bold cyan]3.[/bold cyan] 🤖 luishighnest/telegram-calcio-bot
-[bold cyan]4.[/bold cyan] ⚡ luishighnest/next
-
-[bold cyan]0.[/bold cyan] ⬅️ Torna al menu principale"""
-            console.print("\n")
-            console.print(Panel(sub_menu, title="[bold magenta]Repository GitHub[/bold magenta]", expand=False))
-            sub_scelta = Prompt.ask("Scegli un repository da aprire nel browser", default="0").strip()
-            if sub_scelta == "1":
-                webbrowser.open("https://github.com/luishighnest/kodi")
-                console.print("[green]Apertura nel browser di luishighnest/kodi in corso...[/green]")
-            elif sub_scelta == "2":
-                webbrowser.open("https://github.com/luishighnest/zadonkais")
-                console.print("[green]Apertura nel browser di luishighnest/zadonkais in corso...[/green]")
-            elif sub_scelta == "3":
-                webbrowser.open("https://github.com/luishighnest/telegram-calcio-bot")
-                console.print("[green]Apertura nel browser di luishighnest/telegram-calcio-bot in corso...[/green]")
-            elif sub_scelta == "4":
-                webbrowser.open("https://github.com/luishighnest/next")
-                console.print("[green]Apertura nel browser di luishighnest/next in corso...[/green]")
-        elif scelta == "18":
+        elif scelta == "7":
+            console.print("[cyan]Verifico connessione...[/cyan]")
             try:
-                from dazn_navigator2.cli.amazon_cmds import amazon_menu
-                amazon_menu()
+                ok = run_async(_check_session())
+                if ok:
+                    console.print("[green]Sessione attiva e funzionante.[/green]")
+                else:
+                    console.print("[yellow]Nessuna sessione attiva.[/yellow]")
             except Exception as e:
-                console.print(f"[red]Errore Amazon: {e}[/red]")
+                console.print(f"[red]Errore: {e}[/red]")
+        elif scelta == "8":
+            do_logout()
+            console.print("[green]Logout completato.[/green]")
+            break
 
     # uscita dal menu: pubblica modifiche pendenti e chiude il browser headless
     try:
@@ -237,4 +175,3 @@ if __name__ == "__main__":
         pass
     finally:
         os._exit(0)
-

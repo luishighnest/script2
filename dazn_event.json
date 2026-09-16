@@ -20,5 +20,16 @@
          "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
+   ],
+   "LALIGA EA SPORTS": [
+      {
+         "name": "Atlético Madrid - Osasuna",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/2a64wjw2lyrwr9hr9htqpl821_image-header_pIt_1789571592000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-16T17:00:00Z",
+         "end": "2026-09-16T19:08:28Z",
+         "mpd": "https://dcb-deit-livedazn.daznedge.net/@tend:1789676185~proto:dash~geo:IT~asn:30722_198471~path:1_1_c196145060e5ef11f9a3d10ead4ba7734dc54ce532008ab266b28175ab806542~ua:0845b309c7b9b957afd9ecf775a4c21f~id:b408d624b843~tk3:46e1722c725f90e597a3b8c6af3b8703c4dae566e383e49a98ea77cf9fd8c18f/kzt9ndn4kadr1y0i3gwvvkbxr/web/stream.mpd?channel=2949&outlet=dazn-italy&plang=it&static=1789585709",
+         "key": "9d824186aaeb5749bac922d40e40f20a:434d287804de96e93f9ddf6ed1217968",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
    ]
 }

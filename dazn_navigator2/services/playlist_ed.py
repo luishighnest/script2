@@ -30,7 +30,7 @@ def token_expiry(dazn_token):
     Ritorna datetime locale o None se non riconosciuto.
     """
     from datetime import datetime
-    import base64, json, re
+    import base64, json
     try:
         if dazn_token.startswith("eyJ"):
             payload = dazn_token.split(".")[1]
@@ -39,16 +39,10 @@ def token_expiry(dazn_token):
             if exp:
                 return datetime.fromtimestamp(int(exp))
         elif "~" in dazn_token:
-            # supporta formato tend:<epoch>~... oppure _e~<epoch>_ (Sky / NOW / Akamai / CSSOTT)
-            m_e = re.search(r'(?:^|[_~])e(?:nd)?~?(\d{10})(?:[_~]|$)', dazn_token)
-            if m_e:
-                return datetime.fromtimestamp(int(m_e.group(1)))
             first = dazn_token.split("~")[0]
             for part in first.split(":"):
                 if part.isdigit() and len(part) == 10:
                     return datetime.fromtimestamp(int(part))
-        elif dazn_token.isdigit() and len(dazn_token) == 10:
-            return datetime.fromtimestamp(int(dazn_token))
     except Exception:
         pass
     return None

@@ -22,10 +22,7 @@ class BrowserManager:
         self._context = browser.contexts[0]
         pages = self._context.pages
         self._page = pages[0] if pages else await self._context.new_page()
-        try:
-            await self._page.wait_for_load_state("domcontentloaded", timeout=5000)
-        except Exception:
-            pass
+        await self._page.wait_for_load_state("domcontentloaded")
 
     async def _try_connect_cdp(self):
         try:
@@ -64,38 +61,28 @@ class BrowserManager:
         except Exception:
             self._page = await self._context.new_page()
             cur = "about:blank"
-        
+        if "dazn" not in cur:
+            await self._page.goto("https://www.dazn.com/it-it", wait_until="load", timeout=0)
         js_check = """
         (() => {
             const tok = localStorage.getItem('MISL.authToken');
-            if (!tok) return null;
+            if (!tok) return false;
             try {
                 let p = tok.split('.')[1];
                 p = p.replace(/-/g, '+').replace(/_/g, '/');
                 while (p.length % 4) p += '=';
                 const dec = JSON.parse(atob(p));
-                const now = Math.floor(Date.now() / 1000);
-                if (dec.exp && dec.exp > now + 60) {
-                    return tok;
-                }
-                return 'EXPIRED';
-            } catch(e) { return null; }
+                return (dec.exp && dec.exp > Math.floor(Date.now() / 1000) + 300);
+            } catch(e) { return false; }
         })()
         """
         try:
-            tok_status = await self._page.evaluate(js_check)
+            is_valid = await self._page.evaluate(js_check)
         except Exception:
-            tok_status = None
-
-        if tok_status != 'EXPIRED' and tok_status is not None:
-            return
-
-        # Se il token è scaduto o assente, naviga su DAZN per rinfrescare i cookie di sessione
-        try:
-            await self._page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=15000)
+            is_valid = False
+        if not is_valid:
+            await self._page.goto("https://www.dazn.com/it-it", wait_until="networkidle", timeout=0)
             await asyncio.sleep(2)
-        except Exception:
-            pass
 
     async def evaluate(self, js: str):
         return await self._page.evaluate(js)

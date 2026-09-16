@@ -270,36 +270,16 @@ class DaznExplorer:
             return await self._fetch_epg()
         if section_id == "schedule":
             return await self._fetch_schedule()
-        if section_id == "upcoming" or section_id == "LiveAndNextNew":
-            return await self._fetch_upcoming()
         if section_id == "news":
             return await self._fetch_news()
 
         try:
-            # 1. Prova prima come Rail standard
             data = await self.client.get(
                 f"/Rail?platform=web&id={section_id}&country=it&brand=dazn&languageCode=it&params=PageType:Home"
             )
             tiles = data.get("Tiles", [])
             if not tiles and "Rails" in data:
                 tiles = [t for r in data["Rails"] for t in r.get("Tiles", [])]
-
-            # 2. Se non ha trovato tile, carica il groupId con tutti i Rails della competizione/sport (v9/rails)
-            if not tiles:
-                try:
-                    from dazn_navigator2.services.browser import get_browser
-                    b = await get_browser()
-                    v9_url = (
-                        f"https://rails.discovery.indazn.com/eu/v9/rails"
-                        f"?groupId={section_id}&params=PageType:{section_id}&country=it&brand=dazn"
-                    )
-                    v9_res = await b.fetch_json(v9_url)
-                    if v9_res and v9_res.get("ok"):
-                        for r in v9_res.get("data", {}).get("Rails", []):
-                            tiles.extend(r.get("Tiles", []))
-                except Exception:
-                    pass
-
             items = []
             for t in tiles:
                 ct = ContentTile(
@@ -339,32 +319,25 @@ class DaznExplorer:
         self._cached_tiles["epg"] = items
         return items
 
-    async def _fetch_upcoming(self) -> List[ContentTile]:
-        """Recupera tutti gli eventi programmati e prossimi."""
+    async def _fetch_schedule(self) -> List[ContentTile]:
+        data = await self.client.get(
+            "/Rail?platform=web&id=Catchup&country=it&brand=dazn&languageCode=it&params=PageType:Home"
+        )
+        tiles = data.get("Tiles", [])
         items = []
-        try:
-            data = await self.client.get(
-                "/Rail?platform=web&id=LiveAndNextNew&country=it&brand=dazn&languageCode=it&params=PageType:Home"
+        for t in tiles:
+            ct = ContentTile(
+                id=t.get("Id", ""),
+                asset_id=t.get("AssetId", ""),
+                title=t.get("Title", "Senza titolo"),
+                description=t.get("Description", ""),
+                section="Calendario",
+                tile_type="CatchUp",
+                image=t.get("Image", "") or "",
+                raw=t,
             )
-            tiles = data.get("Tiles", [])
-            if not tiles and "Rails" in data:
-                tiles = [t for r in data["Rails"] for t in r.get("Tiles", [])]
-            for t in tiles:
-                # Includiamo tutti i tile di tipo ComingSoon, Event, LiveAndNext
-                ct = ContentTile(
-                    id=t.get("Id", ""),
-                    asset_id=t.get("AssetId", ""),
-                    title=t.get("Title", "Senza titolo"),
-                    description=t.get("Description", ""),
-                    section="In Programma",
-                    tile_type=t.get("Type", "ComingSoon"),
-                    image=t.get("Image", "") or t.get("HeroImage", "") or "",
-                    raw=t,
-                )
-                items.append(ct)
-        except Exception:
-            pass
-        self._cached_tiles["upcoming"] = items
+            items.append(ct)
+        self._cached_tiles["schedule"] = items
         return items
 
     async def _fetch_news(self) -> List[ContentTile]:
