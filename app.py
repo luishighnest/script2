@@ -3,7 +3,6 @@ import json
 import os
 import sys
 import shutil
-import zipfile
 from pathlib import Path
 from flask import Flask, render_template, jsonify, request, Response, session
 
@@ -69,18 +68,18 @@ def check_session():
         pname = session.get("user_profile_name", "Profilo")
         cfg = load_profiles_config()
         saved_path = cfg.get(pid, {}).get("chrome_profile_path")
-        has_file = False
+        has_folder = False
         if saved_path:
             p_obj = Path(saved_path)
             if not p_obj.is_absolute():
                 p_obj = BASE_DIR / p_obj
-            has_file = p_obj.exists()
+            has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
 
         return jsonify({
             "logged_in": True,
             "profile_id": pid,
             "profile": pname,
-            "chrome_profile_set": has_file,
+            "chrome_profile_set": has_folder,
             "chrome_profile_path": saved_path or ""
         })
     return jsonify({"logged_in": False})
@@ -98,33 +97,32 @@ def login():
         
         cfg = load_profiles_config()
         saved_path = cfg.get(pid, {}).get("chrome_profile_path")
-        has_file = False
+        has_folder = False
         if saved_path:
             p_obj = Path(saved_path)
             if not p_obj.is_absolute():
                 p_obj = BASE_DIR / p_obj
-            has_file = p_obj.exists()
+            has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
         
         return jsonify({
             "ok": True,
             "profile_id": pid,
             "profile": prof["name"],
-            "chrome_profile_set": has_file,
+            "chrome_profile_set": has_folder,
             "chrome_profile_path": saved_path or ""
         })
     return jsonify({"ok": False, "error": "Password non corretta"}), 401
 
-@app.route("/api/upload-profile", methods=["POST"])
-def upload_profile():
+@app.route("/api/upload-profile-folder", methods=["POST"])
+def upload_profile_folder():
     if "user_profile_id" not in session:
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
 
-    if "file" not in request.files:
-        return jsonify({"ok": False, "error": "Nessun file inviato"}), 400
+    files = request.files.getlist("files[]")
+    paths = request.form.getlist("paths[]")
 
-    uploaded_file = request.files["file"]
-    if not uploaded_file.filename or not uploaded_file.filename.lower().endswith(".zip"):
-        return jsonify({"ok": False, "error": "Formato non supportato. Carica un archivio .zip"}), 400
+    if not files or not paths:
+        return jsonify({"ok": False, "error": "Nessun file ricevuto dalla cartella"}), 400
 
     pid = session["user_profile_id"]
     profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
@@ -137,34 +135,31 @@ def upload_profile():
             pass
     profile_dest.mkdir(parents=True, exist_ok=True)
 
-    zip_path = profile_dest / "temp_upload.zip"
-    uploaded_file.save(str(zip_path))
+    for file_obj, rel_path in zip(files, paths):
+        # Es: rel_path è "chrome_profile/Default/Cookies"
+        # Rimuoviamo il primo segmento se è il nome della cartella principale selezionata
+        parts = Path(rel_path).parts
+        if len(parts) > 1:
+            clean_rel = Path(*parts[1:])
+        else:
+            clean_rel = Path(parts[0])
 
-    # Decomprime l'archivio ZIP
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(profile_dest)
-        zip_path.unlink(missing_ok=True)
-    except Exception as e:
-        return jsonify({"ok": False, "error": f"Errore durante l'estrazione dello zip: {e}"}), 500
-
-    # Se lo zip conteneva una singola cartella padre (es. chrome_profile/), risolvi
-    subdirs = [p for p in profile_dest.iterdir() if p.is_dir()]
-    final_dir = profile_dest
-    if len(subdirs) == 1 and not any(p.is_file() for p in profile_dest.iterdir()):
-        final_dir = subdirs[0]
+        target_file = profile_dest / clean_rel
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        file_obj.save(str(target_file))
 
     # Memorizza in modo permanente
+    rel_profile_str = str(profile_dest.relative_to(BASE_DIR))
     cfg = load_profiles_config()
     if pid not in cfg:
         cfg[pid] = {}
-    cfg[pid]["chrome_profile_path"] = str(final_dir.relative_to(BASE_DIR))
+    cfg[pid]["chrome_profile_path"] = rel_profile_str
     save_profiles_config(cfg)
 
     return jsonify({
         "ok": True,
         "profile": session.get("user_profile_name", pid),
-        "chrome_profile_path": cfg[pid]["chrome_profile_path"]
+        "chrome_profile_path": rel_profile_str
     })
 
 @app.route("/api/logout", methods=["POST"])
