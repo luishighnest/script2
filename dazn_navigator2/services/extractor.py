@@ -251,7 +251,7 @@ class HeadlessExtractor:
         if not _CACHED_SERVICES.get("Playback"):
             _t = time.time()
             startup_url = "https://startup.core.indazn.com/misl/v5/Startup"
-            startup_body = {"LandingPageKey":"", "Languages":"it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer":"", "PromoCode":""}
+            startup_body = {"LandingPageKey":"", "Languages":"it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer":"", "PromoCode":"", "CountryCode":"it"}
             startup_r = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
             console.print(f"[dim]  -> 2. Startup API: {time.time() - _t:.2f}s[/dim]")
             
@@ -279,9 +279,9 @@ class HeadlessExtractor:
         if not playback_svc:
             playback_svc = "https://api.playback.indazn.com/v5/Playback"
 
-        # Playback API
+        # Playback API (country e countryCode impostati esplicitamente a 'it')
         _t = time.time()
-        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
+        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
         pb_url = f"{playback_svc}?{qs}"
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
