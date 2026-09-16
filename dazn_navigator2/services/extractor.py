@@ -276,32 +276,59 @@ class HeadlessExtractor:
             _t = time.time()
             startup_url = "https://startup.core.indazn.com/misl/v5/Startup"
             startup_body = {"LandingPageKey":"", "Languages":"it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer":"", "PromoCode":"", "CountryCode":"it"}
-            startup_r = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
+            
+            # Tenta prima direttamente dal browser context autenticato (evita blocchi IP datacenter/CloudFront)
+            startup_r = None
+            if page:
+                try:
+                    js_startup = """async ({url, jwt, body}) => {
+                        try {
+                            const r = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'authorization': 'Bearer ' + jwt,
+                                    'content-type': 'application/json'
+                                },
+                                body: JSON.stringify(body)
+                            });
+                            const txt = await r.text();
+                            return { ok: r.ok, status: r.status, body: txt };
+                        } catch(e) {
+                            return { ok: false, error: e.name + ': ' + e.message };
+                        }
+                    }"""
+                    startup_r = await page.evaluate(js_startup, {"url": startup_url, "jwt": jwt, "body": startup_body})
+                except Exception:
+                    pass
+
+            if not startup_r or not startup_r.get("ok"):
+                startup_r = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
+            
             console.print(f"[dim]  -> 2. Startup API: {time.time() - _t:.2f}s[/dim]")
             
             if not startup_r.get("ok"):
-                err_sd = startup_r.get("error") or startup_r.get("body") or f"HTTP {startup_r.get('status', 'sconosciuto')}"
-                self.result["error"] = f"Startup API fallita: {err_sd}"
-                return self.result
+                # Se Startup fallisce per WAF/CloudFront, usa endpoint Playback standard noto
+                _CACHED_SERVICES["Playback"] = "https://api.playback.indazn.com/v5/Playback"
+            else:
+                try:
+                    sd = json.loads(startup_r["body"]).get("ServiceDictionary", {})
+                    ver = json.loads(startup_r["body"]).get("Version", "v3")
 
-            sd = json.loads(startup_r["body"]).get("ServiceDictionary", {})
-            ver = json.loads(startup_r["body"]).get("Version", "v3")
+                    def _svc(key):
+                        entry = sd.get(key, {})
+                        if isinstance(entry, str):
+                            return entry.replace("{version}", ver)
+                        if isinstance(entry, dict):
+                            for v in sorted(entry.get("Versions", {}), key=lambda x: int(x[1:]) if x[1:].isdigit() else 0, reverse=True):
+                                sp = entry["Versions"][v].get("ServicePath", "")
+                                if sp: return sp
+                        return ""
 
-            def _svc(key):
-                entry = sd.get(key, {})
-                if isinstance(entry, str):
-                    return entry.replace("{version}", ver)
-                if isinstance(entry, dict):
-                    for v in sorted(entry.get("Versions", {}), key=lambda x: int(x[1:]) if x[1:].isdigit() else 0, reverse=True):
-                        sp = entry["Versions"][v].get("ServicePath", "")
-                        if sp: return sp
-                return ""
+                    _CACHED_SERVICES = {k: _svc(k) for k in ("Rails","Rail","Playback","Epg","GetCompetitionsForEpg","Search","ContentItem","Event")}
+                except Exception:
+                    _CACHED_SERVICES["Playback"] = "https://api.playback.indazn.com/v5/Playback"
 
-            _CACHED_SERVICES = {k: _svc(k) for k in ("Rails","Rail","Playback","Epg","GetCompetitionsForEpg","Search","ContentItem","Event")}
-
-        playback_svc = _CACHED_SERVICES.get("Playback")
-        if not playback_svc:
-            playback_svc = "https://api.playback.indazn.com/v5/Playback"
+        playback_svc = _CACHED_SERVICES.get("Playback") or "https://api.playback.indazn.com/v5/Playback"
 
         # Playback API (country e countryCode impostati esplicitamente a 'it')
         _t = time.time()
@@ -310,39 +337,16 @@ class HeadlessExtractor:
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
 
-        # Se riceve 401 o 403: rigenera JWT e/o invalida cache endpoint e riprova
+        # Se riceve 401 o 403: rigenera JWT e riprova
         if not pb_r.get("ok") and pb_r.get("status") in (401, 403):
             from dazn_navigator2.services.browser import get_browser
             b = await get_browser()
-            # 403 può indicare anche endpoint cambiato: svuota cache e richiama Startup
-            if pb_r.get("status") == 403:
-                _CACHED_SERVICES.clear()
             try:
                 await b.page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=15000)
                 await asyncio.sleep(2)
             except Exception:
                 pass
             page, jwt = await self._get_page_and_jwt(profile_dir)
-            # Se cache svuotata (403), richiama Startup per endpoint fresco
-            if not _CACHED_SERVICES.get("Playback"):
-                startup_url = "https://startup.core.indazn.com/misl/v5/Startup"
-                startup_body = {"LandingPageKey":"", "Languages":"it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer":"Web", "PromoCode":""}
-                startup_r = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
-                if startup_r.get("ok"):
-                    sd2 = json.loads(startup_r["body"]).get("ServiceDictionary", {})
-                    ver2 = json.loads(startup_r["body"]).get("Version", "v3")
-                    def _svc2(key):
-                        entry = sd2.get(key, {})
-                        if isinstance(entry, str):
-                            return entry.replace("{version}", ver2)
-                        if isinstance(entry, dict):
-                            for v in sorted(entry.get("Versions", {}), key=lambda x: int(x[1:]) if x[1:].isdigit() else 0, reverse=True):
-                                sp = entry["Versions"][v].get("ServicePath", "")
-                                if sp: return sp
-                        return ""
-                    _CACHED_SERVICES.update({k: _svc2(k) for k in ("Rails", "Rail", "Playback", "Epg", "GetCompetitionsForEpg", "Search", "ContentItem", "Event")})
-                    playback_svc = _CACHED_SERVICES.get("Playback") or "https://api.playback.indazn.com/v5/Playback"
-                    pb_url = f"{playback_svc}?{qs}"
             pb_r = await self._chiama_api(pb_url, jwt, page=page)
 
         console.print(f"[dim]  -> 3. Playback API: {time.time() - _t:.2f}s[/dim]")
