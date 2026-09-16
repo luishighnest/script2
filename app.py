@@ -4,7 +4,7 @@ import os
 import sys
 import shutil
 from pathlib import Path
-from flask import Flask, render_template, jsonify, request, Response, session
+from flask import Flask, render_template, jsonify, request, Response, session, redirect, url_for
 
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
@@ -21,6 +21,7 @@ PROFILES_CONFIG_FILE = BASE_DIR / "profiles_config.json"
 UPLOAD_PROFILES_DIR = BASE_DIR / "saved_profiles"
 UPLOAD_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
 
+# 2 Profili con password dedicate
 PROFILES = {
     "mpd": {"id": "mpd", "name": "Profilo MPD"},
     "pz8": {"id": "pz8", "name": "Profilo PZ8"}
@@ -54,65 +55,59 @@ def get_active_chrome_profile(profile_id):
             path_obj = BASE_DIR / path_obj
         if path_obj.exists():
             return str(path_obj)
-    # Default fallback
     return str(BASE_DIR / "chrome_profile")
 
 @app.route("/")
-def index():
-    return render_template("index.html")
-
-@app.route("/api/session", methods=["GET"])
-def check_session():
+def home():
     if "user_profile_id" in session:
-        pid = session["user_profile_id"]
-        pname = session.get("user_profile_name", "Profilo")
-        cfg = load_profiles_config()
-        saved_path = cfg.get(pid, {}).get("chrome_profile_path")
-        has_folder = False
-        if saved_path:
-            p_obj = Path(saved_path)
-            if not p_obj.is_absolute():
-                p_obj = BASE_DIR / p_obj
-            has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
+        return redirect("/script")
+    return redirect("/login")
 
-        return jsonify({
-            "logged_in": True,
-            "profile_id": pid,
-            "profile": pname,
-            "chrome_profile_set": has_folder,
-            "chrome_profile_path": saved_path or ""
-        })
-    return jsonify({"logged_in": False})
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    if request.method == "POST":
+        password = request.form.get("password", "").strip()
+        if password in PROFILES:
+            prof = PROFILES[password]
+            session["user_profile_id"] = prof["id"]
+            session["user_profile_name"] = prof["name"]
+            return redirect("/script")
+        return render_template("login.html", error="Password non valida. Riprova.")
+    
+    if "user_profile_id" in session:
+        return redirect("/script")
+    return render_template("login.html")
 
-@app.route("/api/login", methods=["POST"])
-def login():
-    body = request.get_json() or {}
-    password = body.get("password", "").strip()
+@app.route("/script")
+def script_page():
+    if "user_profile_id" not in session:
+        return redirect("/login")
 
-    if password in PROFILES:
-        prof = PROFILES[password]
-        pid = prof["id"]
-        session["user_profile_id"] = pid
-        session["user_profile_name"] = prof["name"]
-        
-        cfg = load_profiles_config()
-        saved_path = cfg.get(pid, {}).get("chrome_profile_path")
-        has_folder = False
-        if saved_path:
-            p_obj = Path(saved_path)
-            if not p_obj.is_absolute():
-                p_obj = BASE_DIR / p_obj
-            has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
-        
-        return jsonify({
-            "ok": True,
-            "profile_id": pid,
-            "profile": prof["name"],
-            "chrome_profile_set": has_folder,
-            "chrome_profile_path": saved_path or ""
-        })
-    return jsonify({"ok": False, "error": "Password non corretta"}), 401
+    pid = session["user_profile_id"]
+    pname = session.get("user_profile_name", "Profilo")
+    cfg = load_profiles_config()
+    saved_path = cfg.get(pid, {}).get("chrome_profile_path")
+    
+    has_folder = False
+    if saved_path:
+        p_obj = Path(saved_path)
+        if not p_obj.is_absolute():
+            p_obj = BASE_DIR / p_obj
+        has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
 
+    return render_template(
+        "script.html",
+        profile_name=pname,
+        chrome_profile_set=has_folder,
+        chrome_profile_path=saved_path or "Nessuna cartella configurata"
+    )
+
+@app.route("/logout")
+def logout_action():
+    session.clear()
+    return redirect("/login")
+
+# API PER GESTIONE CARICAMENTO CARTELLA
 @app.route("/api/upload-profile-folder", methods=["POST"])
 def upload_profile_folder():
     if "user_profile_id" not in session:
@@ -127,7 +122,6 @@ def upload_profile_folder():
     pid = session["user_profile_id"]
     profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
 
-    # Cancella vecchia cartella se presente
     if profile_dest.exists():
         try:
             shutil.rmtree(profile_dest)
@@ -136,8 +130,6 @@ def upload_profile_folder():
     profile_dest.mkdir(parents=True, exist_ok=True)
 
     for file_obj, rel_path in zip(files, paths):
-        # Es: rel_path è "chrome_profile/Default/Cookies"
-        # Rimuoviamo il primo segmento se è il nome della cartella principale selezionata
         parts = Path(rel_path).parts
         if len(parts) > 1:
             clean_rel = Path(*parts[1:])
@@ -148,7 +140,6 @@ def upload_profile_folder():
         target_file.parent.mkdir(parents=True, exist_ok=True)
         file_obj.save(str(target_file))
 
-    # Memorizza in modo permanente
     rel_profile_str = str(profile_dest.relative_to(BASE_DIR))
     cfg = load_profiles_config()
     if pid not in cfg:
@@ -161,11 +152,6 @@ def upload_profile_folder():
         "profile": session.get("user_profile_name", pid),
         "chrome_profile_path": rel_profile_str
     })
-
-@app.route("/api/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify({"ok": True})
 
 @app.route("/api/events", methods=["GET"])
 def get_saved_events():
