@@ -1,4 +1,4 @@
-﻿FROM python:3.11-slim
+FROM python:3.11-slim
 
 # Installa git, dipendenze di sistema e browser per Playwright
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -36,4 +36,4 @@ COPY . .
 ENV PORT=5000
 EXPOSE 5000
 
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "--timeout", "120", "app:app"]
+CMD ["sh", "-c", "gunicorn -w 1 -b 0.0.0.0:${PORT:-5000} --timeout 120 app:app"]
