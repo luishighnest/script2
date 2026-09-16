@@ -80,29 +80,37 @@ class HeadlessExtractor:
     def _read_jwt_from_disk(self, profile_dir: Path) -> str:
         if not profile_dir or not Path(profile_dir).exists():
             return ""
+        import re, time, base64 as _b64
         p = Path(profile_dir)
         leveldb_dirs = [
             p / "Default" / "Local Storage" / "leveldb",
             p / "Local Storage" / "leveldb",
             p / "leveldb"
         ]
+        candidates = []
         for ldir in leveldb_dirs:
             if ldir.exists():
-                for f in sorted(ldir.glob("*.ldb"), key=lambda x: x.stat().st_mtime, reverse=True):
+                for f in sorted(list(ldir.glob("*.ldb")) + list(ldir.glob("*.log")), key=lambda x: x.stat().st_mtime, reverse=True):
                     try:
                         data = f.read_bytes()
                         if b"MISL.authToken" in data:
-                            idx = data.find(b"eyJ")
-                            if idx != -1:
-                                end = data.find(b'"', idx)
-                                if end == -1:
-                                    end = data.find(b'\x00', idx)
-                                if end != -1:
-                                    cand = data[idx:end].decode('utf-8', errors='ignore')
-                                    if cand.startswith("eyJ") and cand.count(".") == 2:
-                                        return cand
+                            tokens = re.findall(rb'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+', data)
+                            for tok_b in tokens:
+                                tok = tok_b.decode('ascii', errors='ignore')
+                                try:
+                                    parts = tok.split('.')
+                                    pad = parts[1] + '=' * (-len(parts[1]) % 4)
+                                    payload = json.loads(_b64.b64decode(pad))
+                                    exp = payload.get('exp', 0)
+                                    candidates.append((exp, tok))
+                                except Exception:
+                                    pass
                     except Exception:
                         pass
+        if candidates:
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            # Ritorna il token con scadenza più recente
+            return candidates[0][1]
         return ""
 
     async def _get_page_and_jwt(self, profile_dir=None):
@@ -196,16 +204,24 @@ class HeadlessExtractor:
             if resp.status_code < 400:
                 return {"ok": True, "status": resp.status_code, "body": resp.text, "type": resp.headers.get("content-type", ""), "fallback": False}
             
-            # Se la risposta HTTP dà errore, fallback rapido su page.evaluate
+            # Se la risposta HTTP dà errore, fallback su page.evaluate nativo dal browser
             if page:
                 try:
                     js_code = """
                     async ({url, method, headers, body}) => {
-                        const opts = { method: method, headers: headers };
-                        if (body !== null) opts.body = JSON.stringify(body);
-                        const resp = await fetch(url, opts);
-                        const text = await resp.text();
-                        return {ok: resp.ok, status: resp.status, body: text, type: resp.headers.get("content-type") || "", fallback: true};
+                        try {
+                            const clean_headers = {...headers};
+                            delete clean_headers['origin'];
+                            delete clean_headers['referer'];
+                            delete clean_headers['user-agent'];
+                            const opts = { method: method, headers: clean_headers };
+                            if (body !== null) opts.body = JSON.stringify(body);
+                            const resp = await fetch(url, opts);
+                            const text = await resp.text();
+                            return {ok: resp.ok, status: resp.status, body: text, type: resp.headers.get("content-type") || "", fallback: true};
+                        } catch(e) {
+                            return {ok: false, error: e.name + ': ' + e.message};
+                        }
                     }
                     """
                     res = await page.evaluate(js_code, {"url": url, "method": method, "headers": headers, "body": body_obj})
@@ -219,11 +235,19 @@ class HeadlessExtractor:
                 try:
                     js_code = """
                     async ({url, method, headers, body}) => {
-                        const opts = { method: method, headers: headers };
-                        if (body !== null) opts.body = JSON.stringify(body);
-                        const resp = await fetch(url, opts);
-                        const text = await resp.text();
-                        return {ok: resp.ok, status: resp.status, body: text, type: resp.headers.get("content-type") || "", fallback: true};
+                        try {
+                            const clean_headers = {...headers};
+                            delete clean_headers['origin'];
+                            delete clean_headers['referer'];
+                            delete clean_headers['user-agent'];
+                            const opts = { method: method, headers: clean_headers };
+                            if (body !== null) opts.body = JSON.stringify(body);
+                            const resp = await fetch(url, opts);
+                            const text = await resp.text();
+                            return {ok: resp.ok, status: resp.status, body: text, type: resp.headers.get("content-type") || "", fallback: true};
+                        } catch(e) {
+                            return {ok: false, error: e.name + ': ' + e.message};
+                        }
                     }
                     """
                     res = await page.evaluate(js_code, {"url": url, "method": method, "headers": headers, "body": body_obj})
