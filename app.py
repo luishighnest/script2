@@ -3,9 +3,8 @@ import json
 import os
 import sys
 from pathlib import Path
-from flask import Flask, render_template, jsonify, request, Response
+from flask import Flask, render_template, jsonify, request, Response, session
 
-# Assicura import del pacchetto dazn_navigator2
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
@@ -15,8 +14,13 @@ from dazn_navigator2.services.extractor import HeadlessExtractor
 from dazn_navigator2.services.browser import BrowserManager
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dazn-secret-auth-key-2026")
 
-PROFILE_DIR = BASE_DIR / "chrome_profile"
+# Mappa delle password ai rispettivi profili
+PROFILES = {
+    "mpd": "Profilo MPD",
+    "pz8": "Profilo PZ8"
+}
 
 def _image_url(img) -> str:
     if isinstance(img, dict):
@@ -26,16 +30,73 @@ def _image_url(img) -> str:
         return ""
     return str(img) if img else ""
 
+def get_active_chrome_profile():
+    p = session.get("chrome_profile_path", "chrome_profile")
+    path_obj = Path(p)
+    if not path_obj.is_absolute():
+        path_obj = BASE_DIR / path_obj
+    return str(path_obj)
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
+@app.route("/api/session", methods=["GET"])
+def check_session():
+    if "user_profile" in session:
+        return jsonify({
+            "logged_in": True,
+            "profile": session["user_profile"],
+            "chrome_profile_set": bool(session.get("chrome_profile_path")),
+            "chrome_profile_path": session.get("chrome_profile_path", "")
+        })
+    return jsonify({"logged_in": False})
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    body = request.get_json() or {}
+    password = body.get("password", "").strip()
+
+    if password in PROFILES:
+        session["user_profile"] = PROFILES[password]
+        # Cancella eventuale path precedente per chiedere la cartella
+        session.pop("chrome_profile_path", None)
+        return jsonify({"ok": True, "profile": session["user_profile"]})
+    return jsonify({"ok": False, "error": "Password non corretta"}), 401
+
+@app.route("/api/set-profile-path", methods=["POST"])
+def set_profile_path():
+    if "user_profile" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+
+    body = request.get_json() or {}
+    p_path = body.get("chrome_profile_path", "").strip()
+    if not p_path:
+        p_path = "chrome_profile"
+
+    session["chrome_profile_path"] = p_path
+    return jsonify({
+        "ok": True,
+        "profile": session["user_profile"],
+        "chrome_profile_path": p_path
+    })
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"ok": True})
+
 @app.route("/api/events", methods=["GET"])
 def get_saved_events():
+    if "user_profile" not in session:
+        return jsonify({"error": "Non autenticato"}), 401
     return jsonify(_load())
 
 @app.route("/api/live", methods=["GET"])
 def get_live_events():
+    if "user_profile" not in session:
+        return jsonify({"error": "Non autenticato"}), 401
+
     async def _fetch():
         explorer = DaznExplorer()
         tiles = await explorer.get_live_tiles()
@@ -68,6 +129,9 @@ def get_live_events():
 
 @app.route("/api/extract", methods=["POST"])
 def extract_stream():
+    if "user_profile" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+
     body = request.get_json() or {}
     asset_id = body.get("asset_id") or body.get("id")
     title = body.get("title", "Evento")
@@ -75,9 +139,11 @@ def extract_stream():
     if not asset_id:
         return jsonify({"ok": False, "error": "asset_id mancante"}), 400
 
+    target_profile_dir = get_active_chrome_profile()
+
     async def _do_extract():
         ext = HeadlessExtractor()
-        res = await ext.estrai(str(PROFILE_DIR), asset_id, title)
+        res = await ext.estrai(target_profile_dir, asset_id, title)
         if res.get("ok"):
             entry = {
                 "name": res.get("titolo", title),

@@ -92,63 +92,128 @@
             color: #000;
             font-weight: 700;
         }
+        .auth-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            max-width: 450px;
+            margin: 80px auto;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fa-solid fa-play me-2"></i>DAZN EXTRACTOR
-            </a>
-            <div class="d-flex align-items-center gap-2">
-                <a href="/playlist.m3u" target="_blank" class="btn btn-sm btn-outline-warning">
-                    <i class="fa-solid fa-download me-1"></i> Scarica M3U
-                </a>
-                <button class="btn btn-sm btn-outline-info" onclick="refreshData()">
-                    <i class="fa-solid fa-arrows-rotate me-1"></i> Aggiorna
-                </button>
+
+    <!-- STEP 1: LOGIN (SOLO PASSWORD) -->
+    <div id="section-login" class="container">
+        <div class="auth-card">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-lock fa-3x text-warning mb-2"></i>
+                <h3 class="fw-bold text-white">Accesso Riservato</h3>
+                <p class="text-secondary small">Inserisci la password per sbloccare il profilo</p>
             </div>
+            <div id="login-error" class="alert alert-danger d-none py-2 small"></div>
+            <form onsubmit="handleLogin(event)">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Password</label>
+                    <input type="password" id="input-password" class="form-control bg-dark text-white border-secondary" placeholder="Password profilo..." required>
+                </div>
+                <button type="submit" class="btn btn-dazn w-100 py-2">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-2"></i>Accedi
+                </button>
+            </form>
         </div>
-    </nav>
+    </div>
 
-    <div class="container py-4">
-        <ul class="nav nav-pills mb-4" id="viewTabs" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" id="extracted-tab" data-bs-toggle="tab" data-bs-target="#extracted-pane">
-                    <i class="fa-solid fa-list-check me-2"></i>Eventi Estratti (<span id="count-extracted">0</span>)
+    <!-- STEP 2: RICHIESTA PERCORSO CARTELLA CHROME PROFILE -->
+    <div id="section-profile-setup" class="container d-none">
+        <div class="auth-card">
+            <div class="text-center mb-4">
+                <i class="fa-brands fa-chrome fa-3x text-info mb-2"></i>
+                <h4 class="fw-bold text-white">Configura Chrome Profile</h4>
+                <p class="text-secondary small">Profilo autenticato: <strong id="profile-name-label" class="text-warning"></strong></p>
+            </div>
+            <div id="setup-error" class="alert alert-danger d-none py-2 small"></div>
+            <form onsubmit="handleProfileSetup(event)">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Percorso Cartella Chrome Profile</label>
+                    <input type="text" id="input-profile-path" class="form-control bg-dark text-white border-secondary" placeholder="Es. chrome_profile oppure C:\Users\...\chrome_profile" required>
+                    <div class="form-text text-secondary small">Inserisci il path relativo (es. <code>chrome_profile</code>) o assoluto della cartella del profilo browser.</div>
+                </div>
+                <button type="submit" class="btn btn-dazn w-100 py-2">
+                    <i class="fa-solid fa-play me-2"></i>Avvia Interfaccia
                 </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-pane" onclick="loadLive()">
-                    <i class="fa-solid fa-tower-broadcast me-2"></i>Live Disponibili
-                </button>
-            </li>
-        </ul>
+            </form>
+        </div>
+    </div>
 
-        <div class="tab-content" id="myTabContent">
-            <!-- PANE 1: EVENTI GIA' ESTRATTI -->
-            <div class="tab-pane fade show active" id="extracted-pane">
-                <div class="row g-3" id="extracted-container">
-                    <div class="col-12 text-center py-5">
-                        <div class="spinner-border text-warning" role="status"></div>
-                        <p class="mt-2 text-muted">Caricamento eventi estratti...</p>
-                    </div>
+    <!-- STEP 3: INTERFACCIA COMPLETA DELLO SCRIPT -->
+    <div id="section-main" class="d-none">
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <i class="fa-solid fa-play me-2"></i>DAZN EXTRACTOR
+                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary me-2"><i class="fa-solid fa-user me-1"></i> <span id="top-profile-badge"></span></span>
+                    <a href="/playlist.m3u" target="_blank" class="btn btn-sm btn-outline-warning">
+                        <i class="fa-solid fa-download me-1"></i> Scarica M3U
+                    </a>
+                    <button class="btn btn-sm btn-outline-info" onclick="refreshData()">
+                        <i class="fa-solid fa-arrows-rotate me-1"></i> Aggiorna
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Esci
+                    </button>
                 </div>
             </div>
+        </nav>
 
-            <!-- PANE 2: LIVE DISPONIBILI -->
-            <div class="tab-pane fade" id="live-pane">
-                <div class="row g-3" id="live-container">
-                    <div class="col-12 text-center py-5">
-                        <div class="spinner-border text-info" role="status"></div>
-                        <p class="mt-2 text-muted">Caricamento catalogo live...</p>
+        <div class="container py-4">
+            <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-4 py-2">
+                <small class="text-secondary"><i class="fa-solid fa-folder me-1"></i> Chrome Profile attivo: <code id="active-profile-path" class="text-info"></code></small>
+                <button class="btn btn-sm btn-link text-warning p-0 text-decoration-none" onclick="changeProfilePath()">Cambia cartella</button>
+            </div>
+
+            <ul class="nav nav-pills mb-4" id="viewTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="extracted-tab" data-bs-toggle="tab" data-bs-target="#extracted-pane">
+                        <i class="fa-solid fa-list-check me-2"></i>Eventi Estratti (<span id="count-extracted">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-pane" onclick="loadLive()">
+                        <i class="fa-solid fa-tower-broadcast me-2"></i>Live Disponibili
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="myTabContent">
+                <!-- PANE 1: EVENTI ESTRATTI -->
+                <div class="tab-pane fade show active" id="extracted-pane">
+                    <div class="row g-3" id="extracted-container">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-warning" role="status"></div>
+                            <p class="mt-2 text-muted">Caricamento eventi estratti...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 2: LIVE DISPONIBILI -->
+                <div class="tab-pane fade" id="live-pane">
+                    <div class="row g-3" id="live-container">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-info" role="status"></div>
+                            <p class="mt-2 text-muted">Caricamento catalogo live...</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Risultato / Dettagli -->
+    <!-- Modal Dettagli / Estrazione -->
     <div class="modal fade" id="extractModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">
@@ -167,6 +232,108 @@
     <script>
         const modal = new bootstrap.Modal(document.getElementById('extractModal'));
 
+        async function checkSession() {
+            try {
+                const res = await fetch('/api/session');
+                const data = await res.json();
+                if (data.logged_in) {
+                    if (data.chrome_profile_set) {
+                        showMain(data.profile, data.chrome_profile_path);
+                    } else {
+                        showProfileSetup(data.profile);
+                    }
+                } else {
+                    showLogin();
+                }
+            } catch (err) {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('section-login').classList.remove('d-none');
+            document.getElementById('section-profile-setup').classList.add('d-none');
+            document.getElementById('section-main').classList.add('d-none');
+        }
+
+        function showProfileSetup(profileName) {
+            document.getElementById('section-login').classList.add('d-none');
+            document.getElementById('section-profile-setup').classList.remove('d-none');
+            document.getElementById('section-main').classList.add('d-none');
+            document.getElementById('profile-name-label').innerText = profileName;
+            document.getElementById('input-profile-path').value = "chrome_profile";
+        }
+
+        function showMain(profileName, profilePath) {
+            document.getElementById('section-login').classList.add('d-none');
+            document.getElementById('section-profile-setup').classList.add('d-none');
+            document.getElementById('section-main').classList.remove('d-none');
+            document.getElementById('top-profile-badge').innerText = profileName;
+            document.getElementById('active-profile-path').innerText = profilePath;
+            loadExtracted();
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const password = document.getElementById('input-password').value.trim();
+            const errDiv = document.getElementById('login-error');
+            errDiv.classList.add('d-none');
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    showProfileSetup(data.profile);
+                } else {
+                    errDiv.innerText = data.error || 'Password non valida';
+                    errDiv.classList.remove('d-none');
+                }
+            } catch (err) {
+                errDiv.innerText = err.message;
+                errDiv.classList.remove('d-none');
+            }
+        }
+
+        async function handleProfileSetup(e) {
+            e.preventDefault();
+            const path = document.getElementById('input-profile-path').value.trim();
+            const errDiv = document.getElementById('setup-error');
+            errDiv.classList.add('d-none');
+
+            try {
+                const res = await fetch('/api/set-profile-path', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chrome_profile_path: path })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    showMain(data.profile, data.chrome_profile_path);
+                } else {
+                    errDiv.innerText = data.error || 'Errore configurazione percorso';
+                    errDiv.classList.remove('d-none');
+                }
+            } catch (err) {
+                errDiv.innerText = err.message;
+                errDiv.classList.remove('d-none');
+            }
+        }
+
+        async function changeProfilePath() {
+            const res = await fetch('/api/session');
+            const data = await res.json();
+            showProfileSetup(data.profile || 'Profilo');
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.reload();
+        }
+
         async function loadExtracted() {
             try {
                 const res = await fetch('/api/events');
@@ -174,7 +341,6 @@
                 const container = document.getElementById('extracted-container');
                 container.innerHTML = '';
                 
-                let count = 0;
                 const entries = [];
                 for (const [comp, items] of Object.entries(data)) {
                     items.forEach(ev => entries.push({ comp, ...ev }));
@@ -220,7 +386,6 @@
                     container.appendChild(col);
                 });
             } catch (err) {
-                console.error(err);
                 document.getElementById('extracted-container').innerHTML = `<div class="col-12 text-danger text-center">Errore nel caricamento: ${err.message}</div>`;
             }
         }
@@ -330,8 +495,8 @@
             loadExtracted();
         }
 
-        // Inizializza
-        loadExtracted();
+        // Verifica stato iniziale
+        checkSession();
     </script>
 </body>
 </html>
