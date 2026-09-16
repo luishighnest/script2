@@ -173,7 +173,8 @@ def get_live_events():
 
     async def _fetch():
         explorer = DaznExplorer()
-        tiles = await explorer.get_live_tiles()
+        # In DaznExplorer la sezione degli eventi live si chiama 'Live'
+        tiles = await explorer.get_tiles("Live")
         items = []
         for t in tiles:
             raw = t.raw or {}
@@ -193,6 +194,7 @@ def get_live_events():
                 "image": _image_url(t.image),
                 "tile_type": t.tile_type
             })
+        await explorer.close()
         return items
 
     try:

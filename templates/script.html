@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -373,7 +373,12 @@
                 const tiles = await res.json();
                 container.innerHTML = '';
 
-                if (!tiles || tiles.length === 0) {
+                if (!Array.isArray(tiles)) {
+                    container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore nel caricamento: ${tiles.error || JSON.stringify(tiles)}</div>`;
+                    return;
+                }
+
+                if (tiles.length === 0) {
                     container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun evento Live trovato in questo momento.</div>`;
                     return;
                 }
