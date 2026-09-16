@@ -1,0 +1,337 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAZN Event Explorer & Stream Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --accent-yellow: #f8e71c;
+            --accent-blue: #58a6ff;
+            --text-main: #c9d1d9;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        .navbar {
+            background-color: #010409 !important;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--accent-yellow) !important;
+        }
+        .card-event {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-event:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-yellow);
+        }
+        .card-img-top {
+            height: 180px;
+            object-fit: cover;
+            background-color: #21262d;
+        }
+        .badge-live {
+            background-color: #dc3545;
+            color: #fff;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        .badge-extracted {
+            background-color: #238636;
+            color: #fff;
+        }
+        .key-box {
+            background-color: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 8px;
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+            color: #7ee787;
+        }
+        .btn-dazn {
+            background-color: var(--accent-yellow);
+            color: #000;
+            font-weight: 600;
+            border: none;
+        }
+        .btn-dazn:hover {
+            background-color: #e5d414;
+            color: #000;
+        }
+        .nav-pills .nav-link {
+            color: var(--text-main);
+            border-radius: 8px;
+        }
+        .nav-pills .nav-link.active {
+            background-color: var(--accent-yellow);
+            color: #000;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fa-solid fa-play me-2"></i>DAZN EXTRACTOR
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/playlist.m3u" target="_blank" class="btn btn-sm btn-outline-warning">
+                    <i class="fa-solid fa-download me-1"></i> Scarica M3U
+                </a>
+                <button class="btn btn-sm btn-outline-info" onclick="refreshData()">
+                    <i class="fa-solid fa-arrows-rotate me-1"></i> Aggiorna
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <ul class="nav nav-pills mb-4" id="viewTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="extracted-tab" data-bs-toggle="tab" data-bs-target="#extracted-pane">
+                    <i class="fa-solid fa-list-check me-2"></i>Eventi Estratti (<span id="count-extracted">0</span>)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-pane" onclick="loadLive()">
+                    <i class="fa-solid fa-tower-broadcast me-2"></i>Live Disponibili
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- PANE 1: EVENTI GIA' ESTRATTI -->
+            <div class="tab-pane fade show active" id="extracted-pane">
+                <div class="row g-3" id="extracted-container">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-warning" role="status"></div>
+                        <p class="mt-2 text-muted">Caricamento eventi estratti...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 2: LIVE DISPONIBILI -->
+            <div class="tab-pane fade" id="live-pane">
+                <div class="row g-3" id="live-container">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-info" role="status"></div>
+                        <p class="mt-2 text-muted">Caricamento catalogo live...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Risultato / Dettagli -->
+    <div class="modal fade" id="extractModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="modalTitle">Dettagli Stream</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    ...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const modal = new bootstrap.Modal(document.getElementById('extractModal'));
+
+        async function loadExtracted() {
+            try {
+                const res = await fetch('/api/events');
+                const data = await res.json();
+                const container = document.getElementById('extracted-container');
+                container.innerHTML = '';
+                
+                let count = 0;
+                const entries = [];
+                for (const [comp, items] of Object.entries(data)) {
+                    items.forEach(ev => entries.push({ comp, ...ev }));
+                }
+
+                document.getElementById('count-extracted').innerText = entries.length;
+
+                if (entries.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="fa-regular fa-folder-open fa-3x mb-3"></i>
+                            <p>Nessun evento salvato. Vai su "Live Disponibili" per estrarre uno stream.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                entries.forEach(ev => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="card-event p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge badge-extracted"><i class="fa-solid fa-check me-1"></i>Estratto</span>
+                                <small class="text-secondary">${ev.comp || 'Eventi'}</small>
+                            </div>
+                            <h6 class="fw-bold mb-2 text-white">${ev.name || 'Senza Titolo'}</h6>
+                            <p class="text-secondary small mb-2"><i class="fa-regular fa-clock me-1"></i> Inizio: ${ev.start || 'N/D'}</p>
+                            <div class="key-box mb-3">
+                                <div class="text-muted small">KID:KEY</div>
+                                <div>${ev.keys || 'N/A'}</div>
+                            </div>
+                            <div class="mt-auto d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-warning w-50" onclick='copyText("${ev.manifest || ''}", "Manifest MPD copiato!")'>
+                                    <i class="fa-solid fa-copy me-1"></i> MPD
+                                </button>
+                                <button class="btn btn-sm btn-outline-info w-50" onclick='copyText("${ev.keys || ''}", "Chiavi copiate!")'>
+                                    <i class="fa-solid fa-key me-1"></i> Key
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+            } catch (err) {
+                console.error(err);
+                document.getElementById('extracted-container').innerHTML = `<div class="col-12 text-danger text-center">Errore nel caricamento: ${err.message}</div>`;
+            }
+        }
+
+        async function loadLive() {
+            const container = document.getElementById('live-container');
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted">Caricamento eventi live in corso...</p>
+                </div>
+            `;
+            try {
+                const res = await fetch('/api/live');
+                const tiles = await res.json();
+                container.innerHTML = '';
+
+                if (!tiles || tiles.length === 0) {
+                    container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun evento Live trovato in questo momento.</div>`;
+                    return;
+                }
+
+                tiles.forEach(t => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="card-event">
+                            ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
+                            <div class="p-3 d-flex flex-column flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge badge-live">LIVE</span>
+                                    <small class="text-secondary">${t.sport || ''}</small>
+                                </div>
+                                <h6 class="fw-bold mb-2 text-white">${t.title}</h6>
+                                <p class="text-secondary small mb-3">${t.competition || ''}</p>
+                                <div class="mt-auto">
+                                    <button class="btn btn-dazn w-100" onclick="extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}')">
+                                        <i class="fa-solid fa-bolt me-1"></i> Estrai Flusso
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+            } catch (err) {
+                container.innerHTML = `<div class="col-12 text-danger text-center">Errore nel recupero Live: ${err.message}</div>`;
+            }
+        }
+
+        async function extractItem(id, asset_id, encodedTitle) {
+            const title = decodeURIComponent(encodedTitle);
+            document.getElementById('modalTitle').innerText = "Estrazione in corso...";
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-warning mb-3"></div>
+                    <h5>Estrazione chiavi per: ${title}</h5>
+                    <p class="text-secondary small">Recupero JWT, Playback API, MPD e negoziazione licenza CDM Widevine...</p>
+                </div>
+            `;
+            modal.show();
+
+            try {
+                const res = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, asset_id, title })
+                });
+                const result = await res.json();
+
+                if (result.ok) {
+                    document.getElementById('modalTitle').innerText = "Estrazione Riuscita!";
+                    document.getElementById('modalBody').innerHTML = `
+                        <div class="alert alert-success"><i class="fa-solid fa-circle-check me-2"></i>Stream estratto e salvato con successo!</div>
+                        <h6>${title}</h6>
+                        <div class="mb-3 mt-3">
+                            <label class="form-label text-secondary small">Manifest URL (MPD):</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-dark text-white border-secondary" value="${result.mpd_url}" readonly>
+                                <button class="btn btn-outline-warning" onclick='copyText("${result.mpd_url}", "Copiato!")'>Copia</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Chiavi Widevine (KID:KEY):</label>
+                            <div class="key-box">${result.keys.join('<br>')}</div>
+                        </div>
+                    `;
+                    loadExtracted();
+                } else {
+                    document.getElementById('modalTitle').innerText = "Errore Estrazione";
+                    document.getElementById('modalBody').innerHTML = `
+                        <div class="alert alert-danger"><i class="fa-solid fa-circle-xmark me-2"></i>${result.error || 'Errore durante l\'estrazione'}</div>
+                    `;
+                }
+            } catch (err) {
+                document.getElementById('modalTitle').innerText = "Errore";
+                document.getElementById('modalBody').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+            }
+        }
+
+        function copyText(text, msg) {
+            navigator.clipboard.writeText(text);
+            alert(msg || 'Copiato!');
+        }
+
+        function refreshData() {
+            loadExtracted();
+        }
+
+        // Inizializza
+        loadExtracted();
+    </script>
+</body>
+</html>
