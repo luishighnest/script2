@@ -546,6 +546,10 @@
             `;
             try {
                 const res = await fetch('/api/vod');
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+                }
                 const tiles = await res.json();
                 renderTileGrid(tiles, container, 'vod');
             } catch (err) {
@@ -567,6 +571,10 @@
             `;
             try {
                 const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+                }
                 const tiles = await res.json();
                 if (Array.isArray(tiles) && tiles.length === 0) {
                     container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun risultato trovato per "${q}".</div>`;
@@ -593,8 +601,24 @@
             tiles.forEach(t => {
                 const col = document.createElement('div');
                 col.className = 'col-md-6 col-lg-4';
-                const badgeColor = contextType === 'vod' ? 'bg-primary' : (contextType === 'search' ? 'bg-secondary' : 'badge-live');
-                const badgeText = contextType === 'vod' ? 'VOD / REPLAY' : (contextType === 'search' ? 'RISULTATO' : 'LIVE');
+                const ttype = (t.tile_type || '').toLowerCase();
+                const isNav = ttype === 'navigation';
+                let badgeColor = 'badge-live';
+                let badgeText = 'LIVE';
+                if (ttype === 'catchup' || ttype === 'ondemand') {
+                    badgeColor = 'bg-primary';
+                    badgeText = 'VOD / REPLAY';
+                } else if (ttype === 'upcoming') {
+                    badgeColor = 'bg-warning text-dark';
+                    badgeText = 'PROSSIMAMENTE';
+                } else if (isNav) {
+                    badgeColor = 'bg-secondary';
+                    badgeText = 'CATEGORIA';
+                } else if (contextType === 'search') {
+                    badgeColor = 'bg-info text-dark';
+                    badgeText = t.tile_type || 'RISULTATO';
+                }
+
                 col.innerHTML = `
                     <div class="card-event">
                         ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
@@ -606,9 +630,14 @@
                             <h6 class="fw-bold mb-2 text-white">${t.title}</h6>
                             <p class="text-secondary small mb-3">${t.competition || ''}</p>
                             <div class="mt-auto">
-                                <button class="btn btn-dazn w-100" onclick="extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}')">
-                                    <i class="fa-solid fa-bolt me-1"></i> Estrai Flusso
-                                </button>
+                                ${isNav ? 
+                                    `<button class="btn btn-outline-secondary w-100 disabled" style="opacity: 0.6;">
+                                        <i class="fa-solid fa-folder me-1"></i> Categoria
+                                     </button>` :
+                                    `<button class="btn btn-dazn w-100" onclick="extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}')">
+                                        <i class="fa-solid fa-bolt me-1"></i> Estrai Flusso
+                                     </button>`
+                                }
                             </div>
                         </div>
                     </div>
@@ -627,6 +656,10 @@
             `;
             try {
                 const res = await fetch('/api/live');
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+                }
                 const tiles = await res.json();
                 renderTileGrid(tiles, container, 'live');
             } catch (err) {
@@ -652,7 +685,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id, asset_id, title })
                 });
-                const result = await res.json();
+
+                let result;
+                const contentType = res.headers.get("content-type") || "";
+                if (contentType.includes("application/json")) {
+                    result = await res.json();
+                } else {
+                    const textResp = await res.text();
+                    result = { ok: false, error: textResp || `Errore HTTP ${res.status}: ${res.statusText}` };
+                }
 
                 if (result.ok) {
                     document.getElementById('modalTitle').innerText = "Estrazione Riuscita!";

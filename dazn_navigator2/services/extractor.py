@@ -7,7 +7,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 from rich.console import Console
 
-console = Console()
+console = Console(safe_box=True, highlight=False)
 
 
 
@@ -152,11 +152,9 @@ class HeadlessExtractor:
         
         dev_id = getattr(self, "_real_device_id", None) or self._device_id()
 
-        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         headers = {
             "authorization": f"Bearer {jwt}",
             "x-dazn-device": dev_id,
-            "user-agent": ua,
             "content-type": "application/json",
             "accept": "*/*",
             "origin": "https://www.dazn.com",
@@ -247,7 +245,7 @@ class HeadlessExtractor:
         import time
         _t = time.time()
         page, jwt = await self._get_page_and_jwt(profile_dir)
-        console.print(f"[dim]  → 1. Get JWT: {time.time() - _t:.2f}s[/dim]")
+        console.print(f"[dim]  -> 1. Get JWT: {time.time() - _t:.2f}s[/dim]")
 
         # Startup API (chiamata solo se non già in cache)
         if not _CACHED_SERVICES.get("Playback"):
@@ -255,7 +253,7 @@ class HeadlessExtractor:
             startup_url = "https://startup.core.indazn.com/misl/v5/Startup"
             startup_body = {"LandingPageKey":"", "Languages":"it", "Platform": getattr(self, "_test_platform", "web"), "Manufacturer":"", "PromoCode":""}
             startup_r = await self._chiama_api(startup_url, jwt, method="POST", body_obj=startup_body, page=page)
-            console.print(f"[dim]  → 2. Startup API: {time.time() - _t:.2f}s[/dim]")
+            console.print(f"[dim]  -> 2. Startup API: {time.time() - _t:.2f}s[/dim]")
             
             if not startup_r.get("ok"):
                 err_sd = startup_r.get("error") or startup_r.get("body") or f"HTTP {startup_r.get('status', 'sconosciuto')}"
@@ -323,11 +321,22 @@ class HeadlessExtractor:
                     pb_url = f"{playback_svc}?{qs}"
             pb_r = await self._chiama_api(pb_url, jwt, page=page)
 
-        console.print(f"[dim]  → 3. Playback API: {time.time() - _t:.2f}s[/dim]")
+        console.print(f"[dim]  -> 3. Playback API: {time.time() - _t:.2f}s[/dim]")
 
         if not pb_r.get("ok"):
             err_detail = pb_r.get("error") or pb_r.get("body") or f"HTTP {pb_r.get('status', 'sconosciuto')}"
-            self.result["error"] = f"Playback API fallita: {err_detail}"
+            try:
+                err_json = json.loads(pb_r.get("body", "{}"))
+                odata = err_json.get("odata.error", {})
+                code = odata.get("code")
+                msg = odata.get("message", {}).get("value", "")
+                if code == 10803 or "Eligibility" in msg:
+                    err_detail = "Contenuto non incluso nel tuo abbonamento o evento terminato (Eligibility not allowed)."
+                elif msg:
+                    err_detail = f"{msg} (Codice: {code})"
+            except Exception:
+                pass
+            self.result["error"] = f"Playback API: {err_detail}"
             return self.result
 
         pb = json.loads(pb_r["body"])
@@ -399,7 +408,7 @@ class HeadlessExtractor:
         except Exception as e:
             mpd_r = {"ok": False, "error": str(e)}
 
-        console.print(f"[dim]  → 4. Fetch MPD: {time.time() - _t:.2f}s[/dim]")
+        console.print(f"[dim]  -> 4. Fetch MPD: {time.time() - _t:.2f}s[/dim]")
 
         if not mpd_r.get("ok"):
             err_detail = mpd_r.get('body', '') or mpd_r.get('error', '')
@@ -438,7 +447,7 @@ class HeadlessExtractor:
             "x-daznid": dev_id,
             "x-correlation-id": str(_uuid.uuid4()),
         }
-        console.print(f"[dim]  → 5. PSSH + Challenge CDM: {time.time() - _t:.2f}s[/dim]")
+        console.print(f"[dim]  -> 5. PSSH + Challenge CDM: {time.time() - _t:.2f}s[/dim]")
 
         _t = time.time()
         # License request: usiamo il browser context page con gli header specifici
@@ -500,24 +509,24 @@ class HeadlessExtractor:
             err_msg = f"Licenza: {lr.get('status','?')} - Motivo: {lr.get('statusText', '')} {lr.get('bodyText', '')[:300]} {lr.get('error', '')}".strip()
             self.result["error"] = err_msg
             console.print(f"[bold red]  [Dettaglio Errore Licenza DRM][/bold red]")
-            console.print(f"    • Status HTTP: [bold yellow]{lr.get('status')}[/bold yellow]")
+            console.print(f"    * Status HTTP: [bold yellow]{lr.get('status')}[/bold yellow]")
             if lr.get("statusText"):
-                console.print(f"    • Status Text: {lr.get('statusText')}")
+                console.print(f"    * Status Text: {lr.get('statusText')}")
             if lr.get("bodyText"):
-                console.print(f"    • Corpo Risposta Server: [dim]{lr.get('bodyText')[:400]}[/dim]")
+                console.print(f"    * Corpo Risposta Server: [dim]{lr.get('bodyText')[:400]}[/dim]")
             if lr.get("error"):
-                console.print(f"    • Errore Exception: [red]{lr.get('error')}[/red]")
+                console.print(f"    * Errore Exception: [red]{lr.get('error')}[/red]")
             if lr.get("headers"):
                 server_hdr = lr.get("headers", {}).get("server") or lr.get("headers", {}).get("Server")
                 cf_id = lr.get("headers", {}).get("x-amz-cf-id")
-                console.print(f"    • Server: {server_hdr} (CF-ID: {cf_id})")
+                console.print(f"    * Server: {server_hdr} (CF-ID: {cf_id})")
             cdm.close(sess)
             return self.result
 
         cdm.parse_license(sess, base64.b64decode(lr["body"]))
         keys = [f"{k.kid.hex}:{k.key.hex()}" for k in cdm.get_keys(sess) if k.type == "CONTENT"]
         cdm.close(sess)
-        console.print(f"[dim]  → 6. Licenza DRM: {time.time() - _t:.2f}s[/dim]")
+        console.print(f"[dim]  -> 6. Licenza DRM: {time.time() - _t:.2f}s[/dim]")
 
         if not keys:
 

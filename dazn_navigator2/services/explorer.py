@@ -381,24 +381,34 @@ class DaznExplorer:
         import urllib.parse
         from dazn_navigator2.services.extractor import _get_http_session
         url = f"https://search.discovery.indazn.com/v1/search?searchTerm={urllib.parse.quote(query)}&country=it&brand=dazn"
+        
+        def _parse_tiles(data):
+            playable = []
+            navigation = []
+            for cat in data.get("Results", []):
+                for t in cat.get("Tiles", []):
+                    ttype = t.get("Type", "Unknown")
+                    ct = ContentTile(
+                        id=t.get("Id", ""),
+                        asset_id=t.get("AssetId", "") or t.get("Id", ""),
+                        title=t.get("Title", "Risultato"),
+                        description=t.get("Description", ""),
+                        section="Ricerca",
+                        tile_type=ttype,
+                        image=t.get("Image", "") or "",
+                        raw=t,
+                    )
+                    if ttype.lower() in ("live", "catchup", "ondemand", "playback", "linear"):
+                        playable.append(ct)
+                    else:
+                        navigation.append(ct)
+            return playable + navigation
+
         try:
             client = await _get_http_session()
             resp = await client.get(url, timeout=10)
             if resp.status_code == 200:
-                data = resp.json()
-                items = []
-                for cat in data.get("Results", []):
-                    for t in cat.get("Tiles", []):
-                        items.append(ContentTile(
-                            id=t.get("Id", ""),
-                            asset_id=t.get("AssetId", "") or t.get("Id", ""),
-                            title=t.get("Title", "Risultato"),
-                            description=t.get("Description", ""),
-                            section="Ricerca",
-                            tile_type=t.get("Type", "Unknown"),
-                            image=t.get("Image", "") or "",
-                            raw=t,
-                        ))
+                items = _parse_tiles(resp.json())
                 if items:
                     return items
         except Exception:
@@ -411,21 +421,7 @@ class DaznExplorer:
         if not result.get("ok"):
             return []
 
-        items = []
-        data = result["data"]
-        for cat in data.get("Results", []):
-            for t in cat.get("Tiles", []):
-                items.append(ContentTile(
-                    id=t.get("Id", ""),
-                    asset_id=t.get("AssetId", ""),
-                    title=t.get("Title", "Risultato"),
-                    description=t.get("Description", ""),
-                    section="Ricerca",
-                    tile_type=t.get("Type", "Unknown"),
-                    image=t.get("Image", "") or "",
-                    raw=t,
-                ))
-        return items
+        return _parse_tiles(result.get("data", {}))
 
     async def get_item_details(self, content_tile: ContentTile) -> dict:
         from dazn_navigator2.services.browser import get_browser
