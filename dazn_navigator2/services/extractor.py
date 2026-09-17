@@ -49,8 +49,28 @@ DEVICE_ID_FILE = Path(__file__).resolve().parent.parent.parent / "chrome_profile
 
 # Sessione HTTP globale persistente con connection pooling
 _GLOBAL_SESSION = None
-_DEFAULT_WORKER = "https://script2.masked.workers.dev"
-PROXY_WORKER = (os.environ.get("DAZN_PROXY_WORKER") or "").strip().rstrip("/") or _DEFAULT_WORKER
+
+def _load_proxy_worker() -> str:
+    """Carica l'URL del Cloudflare Worker senza esporlo nel sorgente.
+
+    Ordine: variabile d'ambiente DAZN_PROXY_WORKER, poi file locale gitignored
+    (worker_url.txt / .worker_url). Nel repo resta solo un placeholder mascherato.
+    """
+    v = (os.environ.get("DAZN_PROXY_WORKER") or "").strip().rstrip("/")
+    if v:
+        return v
+    for _name in ("worker_url.txt", ".worker_url"):
+        _f = Path(__file__).resolve().parent.parent.parent / _name
+        try:
+            if _f.exists():
+                _t = _f.read_text(encoding="utf-8").strip().rstrip("/")
+                if _t:
+                    return _t
+        except Exception:
+            pass
+    return ""
+
+PROXY_WORKER = _load_proxy_worker()
 
 _CACHED_SERVICES = {
     "Playback": f"{PROXY_WORKER}/v5/Playback" if PROXY_WORKER else "https://api.playback.indazn.com/v5/Playback",

@@ -3,6 +3,8 @@
 *.pyc
 temp_*.zip
 github_token.txt
+worker_url.txt
+.worker_url
 saved_profiles/*/Default/Cache/
 saved_profiles/*/Default/Code Cache/
 saved_profiles/*/Default/GPUCache/
