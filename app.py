@@ -399,6 +399,35 @@ def search_events():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/diagnose")
+def diagnose():
+    import time as _time
+    now = _time.time()
+    results = {}
+    for pid in PROFILES:
+        profile_dir = Path(get_active_chrome_profile(pid))
+        auth_file = profile_dir / "auth_token.json"
+        info = {"profile_dir": str(profile_dir), "auth_file_exists": auth_file.exists()}
+        if auth_file.exists():
+            try:
+                data = json.loads(auth_file.read_text(encoding="utf-8"))
+                tok = data.get("jwt", "")
+                ext = HeadlessExtractor.__new__(HeadlessExtractor)
+                pl = ext._decode_jwt_payload(tok) if tok.startswith("eyJ") else None
+                if pl:
+                    remaining = int(pl.get("exp", 0) - now)
+                    info["country"] = pl.get("country")
+                    info["exp"] = pl.get("exp")
+                    info["remaining_seconds"] = remaining
+                    info["valid_it"] = pl.get("country") == "it" and remaining > 0
+                    info["device_id"] = (pl.get("deviceId") or "")[:40]
+                else:
+                    info["token_parse_error"] = True
+            except Exception as e:
+                info["error"] = str(e)
+        results[pid] = info
+    return jsonify(results)
+
 @app.route("/api/extract", methods=["POST"])
 def extract_stream():
     if "user_profile_id" not in session:

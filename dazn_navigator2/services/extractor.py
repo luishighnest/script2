@@ -1,6 +1,6 @@
 """Estrazione headless: riusa il browser attivo, chiama Playback API, estrae chiavi DRM."""
 
-import sys, json, re, asyncio, subprocess, base64, os, uuid as _uuid
+import sys, json, re, asyncio, subprocess, base64, os, uuid as _uuid, time
 
 from pathlib import Path
 
@@ -90,27 +90,61 @@ class HeadlessExtractor:
         did_file.write_text(did)
         return did
 
+    def _decode_jwt_payload(self, tok):
+        """Decodifica il payload di un JWT DAZN in modo robusto (base64url con padding)."""
+        import base64 as _b64
+        if not tok or not tok.startswith("eyJ"):
+            return None
+        try:
+            parts = tok.split(".")
+            if len(parts) < 2:
+                return None
+            pad = parts[1] + "=" * (-len(parts[1]) % 4)
+            raw = _b64.urlsafe_b64decode(pad.encode("ascii"))
+            return json.loads(raw.decode("utf-8", errors="replace"))
+        except Exception:
+            try:
+                parts = tok.split(".")
+                pad = parts[1] + "=" * (-len(parts[1]) % 4)
+                raw = _b64.b64decode(pad.encode("ascii"))
+                return json.loads(raw.decode("utf-8", errors="replace"))
+            except Exception:
+                return None
+
     def _read_jwt_from_disk(self, profile_dir: Path) -> str:
+        """Ritorna un JWT valido per l'Italia dal profilo (auth_token.json, poi leveldb).
+
+        Accetta SOLO token con country == 'it' e NON scaduti: un token US o scaduto
+        causerebbe l'errore Playback 10000. Return vuoto se non esiste un buon token.
+        """
+        import re, time
         if not profile_dir or not Path(profile_dir).exists():
             return ""
-        import re, time, base64 as _b64
         p = Path(profile_dir)
-        
+        now = time.time()
+
+        def _it_valid(tok):
+            pl = self._decode_jwt_payload(tok)
+            if not pl:
+                return None
+            if pl.get("country") != "it":
+                return None
+            if pl.get("exp", 0) <= now:
+                return None
+            return pl
+
         # 1. Controlla prima il file dedicato auth_token.json
         auth_file = p / "auth_token.json"
         if auth_file.exists():
             try:
                 data = json.loads(auth_file.read_text(encoding="utf-8"))
                 tok = data.get("jwt")
-                if tok and tok.startswith("eyJ"):
-                    parts = tok.split('.')
-                    pad = parts[1] + '=' * (-len(parts[1]) % 4)
-                    payload = json.loads(_b64.b64decode(pad))
-                    if payload.get("exp", 0) > time.time():
-                        return tok
+                if tok and tok.startswith("eyJ") and _it_valid(tok):
+                    return tok
             except Exception:
                 pass
 
+        # 2. Fallback: LevelDB del browser (solo token country == 'it')
         leveldb_dirs = [
             p / "Default" / "Local Storage" / "leveldb",
             p / "Local Storage" / "leveldb",
@@ -126,77 +160,77 @@ class HeadlessExtractor:
                             tokens = re.findall(rb'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+', data)
                             for tok_b in tokens:
                                 tok = tok_b.decode('ascii', errors='ignore')
-                                try:
-                                    parts = tok.split('.')
-                                    pad = parts[1] + '=' * (-len(parts[1]) % 4)
-                                    payload = json.loads(_b64.b64decode(pad))
-                                    exp = payload.get('exp', 0)
-                                    candidates.append((exp, tok))
-                                except Exception:
-                                    pass
+                                pl = _it_valid(tok)
+                                if pl:
+                                    candidates.append((pl.get('exp', 0), tok))
                     except Exception:
                         pass
         if candidates:
             candidates.sort(key=lambda x: x[0], reverse=True)
-            # Ritorna il token con scadenza più recente
             return candidates[0][1]
         return ""
 
     async def _get_page_and_jwt(self, profile_dir=None):
         """Recupera il page object e JWT dal BrowserManager o direttamente dal profilo."""
-        import base64 as _b64
         from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
         target_p = Path(profile_dir) if profile_dir else None
         self._profile_dir = target_p
         if target_p:
             set_active_profile_dir(target_p)
 
-        # Legge prima il token autenticato da disco (salvato con country: 'it')
+        # 1) Disco: auth_token.json / leveldb (SOLO token country == 'it' non scaduti)
         jwt = ""
         jwt_disk = self._read_jwt_from_disk(target_p)
         if jwt_disk and jwt_disk.startswith("eyJ"):
-            try:
-                p = json.loads(_b64.b64decode(jwt_disk.split(".")[1] + "===="))
-                if p.get("country") == "it" and p.get("exp", 0) > time.time() + 60:
-                    jwt = jwt_disk
-                    did_jwt = p.get("deviceId", "")
-                    if did_jwt:
-                        self._real_device_id = did_jwt
-            except Exception:
-                pass
-        
+            pl = self._decode_jwt_payload(jwt_disk)
+            if pl:
+                jwt = jwt_disk
+                did_jwt = pl.get("deviceId", "")
+                if did_jwt:
+                    self._real_device_id = did_jwt
+                console.print(
+                    f"[dim]  -> Token DAZN valido dal profilo (country={pl.get('country')}, "
+                    f"scade tra {int(pl.get('exp', 0) - time.time())}s)[/dim]"
+                )
+
         b = None
         if not jwt:
+            # 2) Browser: localStorage / sessione rinfrescata (SOLO token country == 'it')
             b = await get_browser(user_data_dir=target_p)
             jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
-            for candidate in [jwt_disk, jwt_browser]:
-                if candidate and candidate.startswith("eyJ"):
-                    try:
-                        p = json.loads(_b64.b64decode(candidate.split(".")[1] + "===="))
-                        if p.get("country") == "it" and p.get("exp", 0) > time.time():
-                            jwt = candidate
-                            break
-                    except Exception:
-                        pass
-            if not jwt:
-                jwt = jwt_browser or jwt_disk
+            pl = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
+            if pl and pl.get("country") == "it" and pl.get("exp", 0) > time.time():
+                jwt = jwt_browser
+                console.print("[dim]  -> Token DAZN valido dal localStorage del browser[/dim]")
 
-            if not jwt or not jwt.startswith("eyJ"):
+            if not jwt:
                 await b.ensure_session()
-                jwt = await b.evaluate("localStorage.getItem('MISL.authToken')") or self._read_jwt_from_disk(target_p)
+                jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
+                pl = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
+                if pl and pl.get("country") == "it" and pl.get("exp", 0) > time.time():
+                    jwt = jwt_browser
+                    console.print("[dim]  -> Token DAZN valido rinfrescato dal browser[/dim]")
+                else:
+                    jwt_disk2 = self._read_jwt_from_disk(target_p)
+                    if jwt_disk2:
+                        jwt = jwt_disk2
 
         if not jwt or not jwt.startswith("eyJ"):
-            raise RuntimeError("JWT non trovato nel profilo DAZN. Assicurati che l'account sia loggato nel profilo.")
+            raise RuntimeError(
+                "JWT Italia valido non trovato nel profilo DAZN. Il token salvato è scaduto o "
+                "appartiene ad un account non italiano. Riesegui l'estrazione con una sessione "
+                "italiana attiva oppure carica il profilo corretto."
+            )
 
-        try:
-            parts = jwt.split(".")
-            pad = parts[1] + "=" * (-len(parts[1]) % 4)
-            payload = json.loads(_b64.b64decode(pad))
-            did_jwt = payload.get("deviceId", "")
+        pl = self._decode_jwt_payload(jwt)
+        if pl:
+            did_jwt = pl.get("deviceId", "")
             if did_jwt:
                 self._real_device_id = did_jwt
-        except Exception:
-            pass
+            console.print(
+                f"[dim]  -> JWT usato per Playback: country={pl.get('country')}, "
+                f"exp in {int(pl.get('exp', 0) - time.time())}s[/dim]"
+            )
 
         if not getattr(self, "_real_device_id", None) and b:
             try:
