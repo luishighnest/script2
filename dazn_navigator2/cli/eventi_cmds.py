@@ -5,33 +5,38 @@ from pathlib import Path
 from rich.console import Console
 from rich.prompt import Prompt
 
-EVENTS_FILE = Path(__file__).resolve().parent.parent.parent / "dazn_event.json"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+EVENTS_FILE = BASE_DIR / "dazn_event.json"
 console = Console()
 
 
-def get_events_file():
+def get_events_file(profile_id=None):
+    if profile_id:
+        return BASE_DIR / f"dazn_event_{profile_id}.json"
     return EVENTS_FILE
 
 
-def _load():
-    if EVENTS_FILE.exists():
+def _load(profile_id=None):
+    target = get_events_file(profile_id)
+    if target.exists():
         try:
-            data = json.loads(EVENTS_FILE.read_text(encoding="utf-8-sig"))
+            data = json.loads(target.read_text(encoding="utf-8-sig"))
             if isinstance(data, dict):
                 return data
         except Exception as e:
-            console.print(f"[red]dazn_event.json corrotto ({e}) - backup in dazn_event.json.bak[/red]")
+            console.print(f"[red]{target.name} corrotto ({e}) - backup in {target.name}.bak[/red]")
             try:
-                bak = EVENTS_FILE.with_suffix(".json.bak")
-                bak.write_text(EVENTS_FILE.read_text(encoding="utf-8-sig"), encoding="utf-8")
+                bak = target.with_suffix(".json.bak")
+                bak.write_text(target.read_text(encoding="utf-8-sig"), encoding="utf-8")
             except Exception:
                 pass
     return {}
 
 
-def _save(data):
-    """Scrive il file locale dazn_event.json."""
-    EVENTS_FILE.write_text(json.dumps(data, indent=3, ensure_ascii=False) + "\n", encoding="utf-8")
+def _save(data, profile_id=None):
+    """Scrive il file locale dazn_event.json (per profilo se indicato)."""
+    target = get_events_file(profile_id)
+    target.write_text(json.dumps(data, indent=3, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def pubblica(messaggio=""):
@@ -52,14 +57,14 @@ def _iter_entries(data):
             n += 1
 
 
-def add_event(comp_title, entry):
+def add_event(comp_title, entry, profile_id=None):
     """Aggiunge/sostituisce un evento (dedup per titolo) e salva in locale."""
-    data = _load()
+    data = _load(profile_id)
     comp_title = comp_title or "Eventi"
     grp = data.setdefault(comp_title, [])
     grp[:] = [e for e in grp if e.get("name") != entry.get("name")]
     grp.append(entry)
-    _save(data)
+    _save(data, profile_id)
 
 
 def _sort_key(item):

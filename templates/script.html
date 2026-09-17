@@ -1,108 +1,299 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DAZN Event Explorer & Stream Manager</title>
+    <title>Script2</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <style>
+<style>
         :root {
-            --bg-dark: #0d1117;
-            --card-bg: #161b22;
-            --border-color: #30363d;
-            --accent-yellow: #f8e71c;
-            --text-main: #c9d1d9;
+            --bg: #0b0f14;
+            --card: #11161d;
+            --border: #1c242e;
+            --accent: #f8e71c;
+            --text: #c9d1d9;
+            --muted: #708090;
         }
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            min-height: 100vh;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
+        a { text-decoration: none; }
+
+        .navbar { border-bottom: 1px solid var(--border); }
+
+        .nav-pills .nav-link {
+            color: var(--muted);
+            border-radius: 999px;
+            padding: .35rem .9rem;
+            font-size: .85rem;
+        }
+        .nav-pills .nav-link.active {
+            background-color: transparent;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
         .card-event {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-            overflow: hidden;
+            background-color: transparent;
             height: 100%;
             display: flex;
             flex-direction: column;
+            overflow: visible;
         }
-        .card-event:hover {
-            transform: translateY(-3px);
-            border-color: var(--accent-yellow);
+
+        /* Card estratta: scheda compatta con sfondo */
+        .extracted-card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: border-color .15s ease;
         }
+        .extracted-card:hover { border-color: var(--accent); }
+        .extracted-card .now-card {
+            border-radius: 0;
+            border: none;
+        }
+        .extracted-card .now-card-wrapper::before { display: none; }
+        .extracted-card .now-card-info-external .now-card-time-ext,
+        .extracted-card .now-card-info-external .now-card-title-ext {
+            padding-left: 3px;
+        }
+        .extracted-card-body {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        /* Stile NOW Poster: locandina 16:9 senza bordi ne ombre a riposo */
+        .now-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #11141b;
+            border: 1px solid transparent;
+            transform: translateZ(0);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease;
+            z-index: 1;
+            cursor: pointer;
+        }
+        .now-card-wrapper {
+            position: relative;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        .now-card-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: -10px;
+            right: -10px;
+            aspect-ratio: 16 / 9;
+            border-radius: 20px;
+            box-shadow: 0 28px 56px rgba(0,0,0,0.55), 0 14px 28px rgba(0,0,0,0.35);
+            opacity: 0;
+            transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .now-card-wrapper:hover::before { opacity: 1; }
+        .now-card-wrapper:hover .now-card {
+            transform: scale(1.05) translateY(-6px);
+            border-color: rgba(0, 229, 155, 0.55);
+        }
+        .now-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.6) 100%);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            z-index: 4;
+            pointer-events: none;
+        }
+        .now-card-wrapper:hover .now-card::after { opacity: 1; }
         .card-img-top {
-            height: 180px;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            background-color: #21262d;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .now-card-vignette {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%;
+            height: 70%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.8) 30%, rgba(0,0,0,0) 100%);
+            z-index: 2;
+        }
+        .now-card-play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 50px;
+            height: 50px;
+            background: rgba(20,20,24,0.45);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 19px;
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+        .now-card-wrapper:hover .now-card-play-icon {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.05);
+            background: rgba(255,255,255,0.22);
+            border-color: rgba(255,255,255,0.7);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.25);
+        }
+        .now-card-info-external {
+            display: flex;
+            flex-direction: column;
+            padding-top: 8px;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+        .now-card-time-ext {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.55);
+            font-weight: 600;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .now-card-title-ext {
+            font-size: 0.92rem;
+            color: rgba(255,255,255,0.96);
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.15px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+        }
+        .now-card-wrapper:hover .now-card-title-ext { color: #fff; }
+
+        .badge-extracted {
+            background-color: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            font-size: .65rem;
+            font-weight: 600;
+            letter-spacing: .04em;
         }
         .badge-live {
-            background-color: #dc3545;
-            color: #fff;
-            animation: pulse 1.5s infinite;
+            background-color: transparent;
+            color: #f85149;
+            border: 1px solid #f85149;
+            font-size: .65rem;
+            font-weight: 600;
         }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-        .badge-extracted {
-            background-color: #238636;
-            color: #fff;
-        }
+
         .key-box {
-            background-color: #0d1117;
-            border: 1px solid #21262d;
+            background-color: #0b0f14;
+            border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 8px;
-            font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.8rem;
+            padding: 6px 8px;
+            font-family: SFMono-Regular, Menlo, Monaco, monospace;
+            font-size: .7rem;
             word-break: break-all;
             color: #7ee787;
         }
+
         .btn-dazn {
-            background-color: var(--accent-yellow);
+            background-color: var(--accent);
             color: #000;
             font-weight: 600;
             border: none;
-        }
-        .btn-dazn:hover {
-            background-color: #e5d414;
-            color: #000;
-        }
-        .nav-pills .nav-link {
-            color: var(--text-main);
             border-radius: 8px;
         }
-        .nav-pills .nav-link.active {
-            background-color: var(--accent-yellow);
-            color: #000;
-            font-weight: 700;
+        .btn-dazn:hover { background-color: #e5d414; color: #000; }
+
+        .btn-outline-mini {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: .7rem;
         }
+        .btn-outline-mini:hover { color: var(--accent); border-color: var(--accent); }
+
         .auth-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            max-width: 480px;
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            max-width: 440px;
             margin: 80px auto;
             padding: 30px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
         .file-upload-box {
-            border: 2px dashed var(--border-color);
+            border: 2px dashed var(--border);
             border-radius: 10px;
             padding: 26px 16px;
             text-align: center;
-            background-color: #0d1117;
+            background-color: #0b0f14;
             cursor: pointer;
-            transition: border-color 0.2s, background-color 0.2s;
+            transition: border-color .2s;
         }
-        .file-upload-box:hover {
-            border-color: var(--accent-yellow);
-            background-color: #121820;
+        .file-upload-box:hover { border-color: var(--accent); }
+
+        /* Griglia poster 5 per riga */
+        .poster-col { flex: 0 0 50%; max-width: 50%; padding: 0 .3rem; }
+        @media (min-width: 768px) { .poster-col { flex: 0 0 33.333%; max-width: 33.333%; } }
+        @media (min-width: 1000px) { .poster-col { flex: 0 0 25%; max-width: 25%; } }
+        @media (min-width: 1300px) { .poster-col { flex: 0 0 20%; max-width: 20%; } }
+
+        .poster-title {
+            font-size: .8rem;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.2;
+        }
+        .poster-sub { font-size: .68rem; color: var(--muted); }
+
+        .json-viewer {
+            position: sticky;
+            top: 76px;
+            background-color: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            max-height: calc(100vh - 100px);
+            overflow: auto;
+        }
+        .json-viewer pre {
+            margin: 0;
+            font-size: 0.62rem;
+            line-height: 1.45;
+            color: #7ee787;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
     </style>
 </head>
@@ -123,7 +314,7 @@
                     <div class="file-upload-box" onclick="document.getElementById('input-zip').click()">
                         <i class="fa-solid fa-cloud-arrow-up fa-2x text-warning mb-2"></i>
                         <p class="mb-1 text-white small" id="zip-chosen-name">Clicca per selezionare il file .zip</p>
-                        <span class="text-muted" style="font-size: 0.75rem;">(Es. <code>chrome_profile.zip</code> — salvato per sempre per questo profilo)</span>
+                        <span class="text-muted" style="font-size: 0.75rem;">(Es. <code>chrome_profile.zip</code> â€” salvato per sempre per questo profilo)</span>
                     </div>
                     <input type="file" id="input-zip" accept=".zip" class="d-none" onchange="zipSelected(this)">
                 </div>
@@ -142,30 +333,30 @@
 
     <!-- INTERFACCIA SCRIPT COMPLETA -->
     <div id="section-main" class="d-none">
-        <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #010409 !important; border-bottom: 1px solid var(--border-color);">
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #0b0f14 !important;">
             <div class="container">
-                <a class="navbar-brand fw-bold" style="color: var(--accent-yellow) !important;" href="/script">
-                    <i class="fa-solid fa-play me-2"></i>DAZN EXTRACTOR
+                <a class="navbar-brand fw-bold" style="color: var(--accent) !important; font-size: 1rem;" href="/script">
+                    <i class="fa-solid fa-play me-2"></i>Script2
                 </a>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-secondary me-2"><i class="fa-solid fa-user me-1"></i> <span id="top-profile-badge">{{ profile_name }}</span></span>
-                    <a href="/playlist.m3u" target="_blank" class="btn btn-sm btn-outline-warning">
-                        <i class="fa-solid fa-download me-1"></i> Scarica M3U
+                    <a href="/playlist.m3u" target="_blank" class="btn btn-sm btn-outline-mini">
+                        <i class="fa-solid fa-download me-1"></i> M3U
                     </a>
-                    <button class="btn btn-sm btn-outline-info" onclick="refreshData()">
-                        <i class="fa-solid fa-arrows-rotate me-1"></i> Aggiorna
+                    <button class="btn btn-sm btn-outline-mini" onclick="refreshData()">
+                        <i class="fa-solid fa-arrows-rotate"></i>
                     </button>
-                    <a href="/logout" class="btn btn-sm btn-outline-danger">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Esci
+                    <a href="/logout" class="btn btn-sm btn-outline-mini">
+                        <i class="fa-solid fa-right-from-bracket"></i>
                     </a>
                 </div>
             </div>
         </nav>
 
-        <div class="container py-4">
-            <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-4 py-2">
+        <div class="container py-3">
+            <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-3 py-1" style="border-radius: 8px; --bs-alert-bg: #11161d;">
                 <small class="text-secondary"><i class="fa-solid fa-check-circle text-success me-1"></i> Chrome Profile attivo: <code id="active-profile-path" class="text-info">{{ chrome_profile_path }}</code></small>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="showZipSetup()">Carica nuovo .zip</button>
+                <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="showZipSetup()">Carica nuovo .zip</button>
             </div>
 
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
@@ -204,19 +395,37 @@
             </div>
 
             <div class="tab-content" id="myTabContent">
-                <!-- PANE 1: EVENTI ESTRATTI -->
+<!-- PANE 1: EVENTI ESTRATTI -->
                 <div class="tab-pane fade show active" id="extracted-pane">
-                    <div class="row g-3" id="extracted-container">
-                        <div class="col-12 text-center py-5">
-                            <div class="spinner-border text-warning" role="status"></div>
-                            <p class="mt-2 text-muted">Caricamento eventi estratti...</p>
+                    <div class="row g-3">
+                        <div class="col-lg-9">
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="text-white mb-0"><i class="fa-solid fa-images me-2"></i>Locandine</h6>
+                            </div>
+                            <div class="row g-2" id="extracted-container">
+                                <div class="col-12 text-center py-5">
+                                    <div class="spinner-border text-warning" role="status"></div>
+                                    <p class="mt-2 text-muted">Caricamento eventi estratti...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="text-white mb-0"><i class="fa-solid fa-code me-2"></i>JSON Completo</h6>
+                                <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="copyAllJson()" title="Copia tutto il JSON">
+                                    <i class="fa-solid fa-copy me-1"></i> Copia
+                                </button>
+                            </div>
+                            <div class="json-viewer">
+                                <pre id="extracted-json">Nessun evento...</pre>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- PANE 2: LIVE DISPONIBILI -->
                 <div class="tab-pane fade" id="live-pane">
-                    <div class="row g-3" id="live-container">
+                    <div class="row g-2" id="live-container">
                         <div class="col-12 text-center py-5">
                             <div class="spinner-border text-info" role="status"></div>
                             <p class="mt-2 text-muted">Caricamento catalogo live...</p>
@@ -226,7 +435,7 @@
 
                 <!-- PANE 3: VOD / ON-DEMAND -->
                 <div class="tab-pane fade" id="vod-pane">
-                    <div class="row g-3" id="vod-container">
+                    <div class="row g-2" id="vod-container">
                         <div class="col-12 text-center py-5">
                             <div class="spinner-border text-info" role="status"></div>
                             <p class="mt-2 text-muted">Caricamento catalogo VOD / On-Demand...</p>
@@ -245,7 +454,7 @@
                             </div>
                         </form>
                     </div>
-                    <div class="row g-3" id="search-container">
+                    <div class="row g-2" id="search-container">
                         <div class="col-12 text-center py-5 text-muted">
                             <i class="fa-solid fa-magnifying-glass fa-3x mb-3 text-secondary"></i>
                             <p>Digita una parola chiave sopra per cercare tra tutti i contenuti ed eventi DAZN.</p>
@@ -256,10 +465,10 @@
         </div>
     </div>
 
-    <!-- Modal Dettagli / Estrazione -->
+<!-- Modal Dettagli / Estrazione -->
     <div class="modal fade" id="extractModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">
+            <div class="modal-content" style="background-color: var(--card); border: 1px solid var(--border); color: var(--text);">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title" id="modalTitle">Dettagli Stream</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -274,7 +483,7 @@
     <!-- Modal Rinomina Evento -->
     <div class="modal fade" id="renameModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">
+<div class="modal-content" style="background-color: var(--card); border: 1px solid var(--border); color: var(--text);">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title"><i class="fa-solid fa-pen me-2 text-warning"></i>Rinomina Evento</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -299,22 +508,25 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const modal = new bootstrap.Modal(document.getElementById('extractModal'));
-        const hasFolder = {{ 'true' if chrome_profile_set else 'false' }};
+const modal = new bootstrap.Modal(document.getElementById('extractModal'));
+        let hasFolder = {{ 'true' if chrome_profile_set else 'false' }};
 
         function init() {
-            if (hasFolder) {
-                showMain();
-            } else {
-                showZipSetup();
-            }
+            showMain();
         }
 
-        function showZipSetup() {
+function showZipSetup(reasonText) {
             document.getElementById('section-profile-setup').classList.remove('d-none');
             document.getElementById('section-main').classList.add('d-none');
             document.getElementById('input-zip').value = "";
             document.getElementById('zip-chosen-name').innerText = "Clicca per selezionare il file .zip";
+            const errDiv = document.getElementById('setup-error');
+            if (reasonText) {
+                errDiv.innerText = reasonText;
+                errDiv.classList.remove('d-none');
+            } else {
+                errDiv.classList.add('d-none');
+            }
         }
 
         function showMain() {
@@ -364,7 +576,8 @@
                 progressBar.style.width = "100%";
                 statusText.innerText = "Estrazione completata!";
                 const data = await res.json();
-                if (data.ok) {
+if (data.ok) {
+                    hasFolder = true;
                     document.getElementById('active-profile-path').innerText = data.chrome_profile_path;
                     showMain();
                 } else {
@@ -394,7 +607,7 @@
                     items.forEach((ev, idx) => entries.push({ comp, idx, ...ev }));
                 }
 
-                document.getElementById('count-extracted').innerText = entries.length;
+document.getElementById('count-extracted').innerText = entries.length;
 
                 if (entries.length === 0) {
                     container.innerHTML = `
@@ -403,47 +616,86 @@
                             <p>Nessun evento salvato. Vai su "Live Disponibili", "VOD" o "Cerca Evento" per estrarre uno stream.</p>
                         </div>
                     `;
+                    document.getElementById('extracted-json').innerText = 'Nessun evento...';
                     return;
                 }
 
-                entries.forEach(ev => {
+                const fullJsonBlocks = [];
+
+entries.forEach((ev, eidx) => {
                     const col = document.createElement('div');
-                    col.className = 'col-md-6 col-lg-4';
+                    col.className = 'poster-col';
+
+                    const mpd = ev.manifest || ev.mpd || '';
+                    const keys = ev.keys || ev.key || '';
+                    const extUrl = ev.ext_url || '';
+                    const ua = ev.ua || '';
+
+                    const jsonObj = {
+                        name: ev.name || 'Senza Titolo',
+                        image: ev.logo || ev.image || '',
+                        start: ev.start || '',
+                        end: ev.end || '',
+                        mpd: mpd,
+                        key: keys,
+                        ua: ua
+                    };
+                    const jsonStr = JSON.stringify(jsonObj, null, 2);
+                    window.__extractedEntries[eidx] = { mpd, keys, extUrl, jsonStr };
+                    fullJsonBlocks.push(jsonStr);
+
                     col.innerHTML = `
-                        <div class="card-event p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge badge-extracted"><i class="fa-solid fa-check me-1"></i>Estratto</span>
-                                <small class="text-secondary">${ev.comp || 'Eventi'}</small>
-                            </div>
-                            <h6 class="fw-bold mb-2 text-white">${ev.name || 'Senza Titolo'}</h6>
-                            <p class="text-secondary small mb-2"><i class="fa-regular fa-clock me-1"></i> Inizio: ${ev.start || 'N/D'}</p>
-                            <div class="key-box mb-3">
-                                <div class="text-muted small">KID:KEY</div>
-                                <div>${ev.keys || ev.key || 'N/A'}</div>
-                            </div>
-                            <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-sm btn-outline-warning w-50" onclick='copyText("${ev.manifest || ev.mpd || ''}", "Manifest MPD copiato!")'>
-                                    <i class="fa-solid fa-copy me-1"></i> MPD
-                                </button>
-                                <button class="btn btn-sm btn-outline-info w-50" onclick='copyText("${ev.keys || ev.key || ''}", "Chiavi copiate!")'>
-                                    <i class="fa-solid fa-key me-1"></i> Key
-                                </button>
-                            </div>
-                            <div class="mt-auto pt-2 border-top border-secondary d-flex justify-content-between align-items-center">
-                                <button class="btn btn-sm btn-outline-light py-0 px-2" onclick="openRenameModal('${encodeURIComponent(ev.comp)}', ${ev.idx}, '${encodeURIComponent(ev.name || '')}')">
-                                    <i class="fa-solid fa-pen me-1"></i> Rinomina
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteEvent('${encodeURIComponent(ev.comp)}', ${ev.idx})">
-                                    <i class="fa-solid fa-trash me-1"></i> Elimina
-                                </button>
+                        <div class="extracted-card">
+                            <div class="extracted-card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="poster-title mb-0">${ev.name || 'Senza Titolo'}</h6>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="openRenameModal('${encodeURIComponent(ev.comp)}', ${ev.idx}, '${encodeURIComponent(ev.name || '')}')" title="Rinomina">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="deleteEvent('${encodeURIComponent(ev.comp)}', ${ev.idx})" title="Elimina">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="badge-extracted mb-2"><i class="fa-solid fa-check me-1"></i>Estratto</div>
+                                <div class="d-flex gap-1 mb-2">
+                                    <button class="btn btn-outline-mini flex-fill" onclick='copyEntry(${eidx}, "mpd", "Manifest MPD copiato!")'>
+                                        <i class="fa-solid fa-copy"></i> MPD
+                                    </button>
+                                    <button class="btn btn-outline-mini flex-fill" onclick='copyEntry(${eidx}, "keys", "Chiavi copiate!")'>
+                                        <i class="fa-solid fa-key"></i> Key
+                                    </button>
+                                </div>
+                                <div class="mb-2">
+                                    <button class="btn btn-outline-mini w-100" onclick='copyEntry(${eidx}, "extUrl", "Link estensione copiato!")'>
+                                        <i class="fa-solid fa-link"></i> Copia Link Estensione
+                                    </button>
+                                </div>
+                                <div class="mb-1">
+                                    <button class="btn btn-outline-mini w-100" onclick='copyEntry(${eidx}, "jsonStr", "JSON copiato!")'>
+                                        <i class="fa-solid fa-code"></i> Copia JSON
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
-                    container.appendChild(col);
+container.appendChild(col);
                 });
+
+                const fullJson = fullJsonBlocks.join('\n\n');
+                window.__eventsJson = fullJson;
+                document.getElementById('extracted-json').innerText = fullJson;
             } catch (err) {
                 console.error(err);
                 document.getElementById('extracted-container').innerHTML = `<div class="col-12 text-danger text-center">Errore nel caricamento: ${err.message}</div>`;
+            }
+        }
+
+        function copyAllJson() {
+            const fullJson = window.__eventsJson || document.getElementById('extracted-json').innerText;
+            if (fullJson && fullJson !== 'Nessun evento...') {
+                copyText(fullJson, "JSON completo copiato!");
             }
         }
 
@@ -479,9 +731,8 @@
             }
         }
 
-        async function deleteEvent(encodedComp, index) {
+async function deleteEvent(encodedComp, index) {
             const comp = decodeURIComponent(encodedComp);
-            if (!confirm(`Sei sicuro di voler eliminare questo evento da "${comp}"?`)) return;
 
             try {
                 const res = await fetch('/api/events/delete', {
@@ -598,9 +849,9 @@
                 return;
             }
 
-            tiles.forEach(t => {
+tiles.forEach(t => {
                 const col = document.createElement('div');
-                col.className = 'col-md-6 col-lg-4';
+                col.className = 'poster-col';
                 const ttype = (t.tile_type || '').toLowerCase();
                 const isNav = ttype === 'navigation';
                 let badgeColor = 'badge-live';
@@ -619,25 +870,17 @@
                     badgeText = t.tile_type || 'RISULTATO';
                 }
 
-                col.innerHTML = `
+col.innerHTML = `
                     <div class="card-event">
-                        ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
-                        <div class="p-3 d-flex flex-column flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge ${badgeColor}">${badgeText}</span>
-                                <small class="text-secondary">${t.sport || ''}</small>
+                        <div class="now-card-wrapper" onclick="${isNav ? '' : `extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}', '${t.image ? encodeURIComponent(t.image) : ''}')`}" title="${isNav ? '' : 'Estrai Flusso'}">
+                            <div class="now-card">
+                                ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
+                                <div class="now-card-vignette"></div>
+                                ${isNav ? '' : `<div class="now-card-play-icon"><i class="fa fa-play" style="margin-left:3px;"></i></div>`}
                             </div>
-                            <h6 class="fw-bold mb-2 text-white">${t.title}</h6>
-                            <p class="text-secondary small mb-3">${t.competition || ''}</p>
-                            <div class="mt-auto">
-                                ${isNav ? 
-                                    `<button class="btn btn-outline-secondary w-100 disabled" style="opacity: 0.6;">
-                                        <i class="fa-solid fa-folder me-1"></i> Categoria
-                                     </button>` :
-                                    `<button class="btn btn-dazn w-100" onclick="extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}')">
-                                        <i class="fa-solid fa-bolt me-1"></i> Estrai Flusso
-                                     </button>`
-                                }
+                            <div class="now-card-info-external">
+                                <span class="now-card-time-ext">${badgeText}${t.sport ? ' • ' + t.sport : ''}${t.competition ? ' • ' + t.competition : ''}</span>
+                                <span class="now-card-title-ext">${t.title}</span>
                             </div>
                         </div>
                     </div>
@@ -667,7 +910,11 @@
             }
         }
 
-        async function extractItem(id, asset_id, encodedTitle) {
+async function extractItem(id, asset_id, encodedTitle, encodedImage = '') {
+            if (!hasFolder) {
+                showZipSetup("Per estrarre devi prima caricare il Chrome Profile (.zip) di questo profilo. Caricalo qui sotto, poi riprova l'estrazione.");
+                return;
+            }
             const title = decodeURIComponent(encodedTitle);
             document.getElementById('modalTitle').innerText = "Estrazione in corso...";
             document.getElementById('modalBody').innerHTML = `
@@ -683,7 +930,7 @@
                 const res = await fetch('/api/extract', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, asset_id, title })
+                    body: JSON.stringify({ id, asset_id, title, image: encodedImage ? decodeURIComponent(encodedImage) : '' })
                 });
 
                 let result;
@@ -725,9 +972,16 @@
             }
         }
 
-        function copyText(text, msg) {
+function copyText(text, msg) {
             navigator.clipboard.writeText(text);
-            alert(msg || 'Copiato!');
+        }
+
+        window.__extractedEntries = [];
+
+        function copyEntry(index, field, msg) {
+            const entry = window.__extractedEntries[index];
+            if (!entry || !entry[field]) return;
+            navigator.clipboard.writeText(entry[field]);
         }
 
         function refreshData() {

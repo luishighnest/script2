@@ -43,10 +43,11 @@ PROFILES_CONFIG_FILE = BASE_DIR / "profiles_config.json"
 UPLOAD_PROFILES_DIR = BASE_DIR / "saved_profiles"
 UPLOAD_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
 
-# 2 Profili con password dedicate
+# Profili con password dedicate
 PROFILES = {
-    "mpd": {"id": "mpd", "name": "Profilo MPD"},
-    "pz8": {"id": "pz8", "name": "Profilo PZ8"}
+    "pz8": {"id": "pz8", "name": "Profilo PZ8"},
+    "prova": {"id": "prova", "name": "Profilo Test"},
+    "mpd": {"id": "mpd", "name": "Profilo MPD"}
 }
 
 def load_profiles_config():
@@ -63,6 +64,10 @@ def save_profiles_config(data):
 def sync_to_github(commit_msg: str):
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     if not token:
+        token_file = BASE_DIR / "github_token.txt"
+        if token_file.exists():
+            token = token_file.read_text(encoding="utf-8").strip()
+    if not token:
         print("[Git Sync] GITHUB_TOKEN non configurato, sync su repo saltato.")
         return False, "GITHUB_TOKEN non trovato"
 
@@ -71,7 +76,7 @@ def sync_to_github(commit_msg: str):
     try:
         subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True)
         subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True)
-        subprocess.run(["git", "add", "saved_profiles", "profiles_config.json"], cwd=str(BASE_DIR), check=True)
+        subprocess.run(["git", "add", "profiles_config.json", "dazn_event.json", "dazn_event_*.json"], cwd=str(BASE_DIR), check=True)
         
         # Commit se ci sono cambiamenti
         diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR))
@@ -107,6 +112,9 @@ def get_active_chrome_profile(profile_id):
     if fallback_dir.exists():
         return str(fallback_dir)
     return str(BASE_DIR / "chrome_profile")
+
+def _current_pid():
+    return session.get("user_profile_id")
 
 @app.route("/")
 def home():
@@ -223,7 +231,7 @@ def upload_profile_zip():
 def get_saved_events():
     if "user_profile_id" not in session:
         return jsonify({"error": "Non autenticato"}), 401
-    return jsonify(_load())
+    return jsonify(_load(_current_pid()))
 
 @app.route("/api/events/rename", methods=["POST"])
 def rename_saved_event():
@@ -236,11 +244,11 @@ def rename_saved_event():
     if not comp or index is None or not new_name:
         return jsonify({"ok": False, "error": "Parametri non validi"}), 400
     
-    data = _load()
+    data = _load(_current_pid())
     if comp in data and 0 <= int(index) < len(data[comp]):
         data[comp][int(index)]["name"] = new_name
-        _save(data)
-        sync_to_github(f"edit: rinomina evento {new_name}")
+        _save(data, _current_pid())
+        sync_to_github(f"edit: rinomina evento {new_name} ({_current_pid()})")
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Evento non trovato"}), 404
 
@@ -250,8 +258,8 @@ def delete_saved_event():
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
     body = request.get_json() or {}
     if body.get("all"):
-        _save({})
-        sync_to_github("edit: cancellati tutti gli eventi")
+        _save({}, _current_pid())
+        sync_to_github(f"edit: cancellati tutti gli eventi ({_current_pid()})")
         return jsonify({"ok": True})
     
     comp = body.get("comp")
@@ -259,13 +267,13 @@ def delete_saved_event():
     if not comp or index is None:
         return jsonify({"ok": False, "error": "Parametri mancanti"}), 400
     
-    data = _load()
+    data = _load(_current_pid())
     if comp in data and 0 <= int(index) < len(data[comp]):
         del data[comp][int(index)]
         if not data[comp]:
             del data[comp]
-        _save(data)
-        sync_to_github(f"edit: rimosso evento da {comp}")
+        _save(data, _current_pid())
+        sync_to_github(f"edit: rimosso evento da {comp} ({_current_pid()})")
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Evento non trovato"}), 404
 
@@ -274,7 +282,7 @@ def sort_saved_events():
     if "user_profile_id" not in session:
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
     from dazn_navigator2.cli.eventi_cmds import _iter_entries, _sort_key
-    data = _load()
+    data = _load(_current_pid())
     entries = list(_iter_entries(data))
     if not entries:
         return jsonify({"ok": True})
@@ -283,8 +291,8 @@ def sort_saved_events():
     nuovo_data = {}
     for _, comp, _, ev_ in ordinato:
         nuovo_data.setdefault(comp, []).append(ev_)
-    _save(nuovo_data)
-    sync_to_github("edit: eventi riordinati per data")
+    _save(nuovo_data, _current_pid())
+    sync_to_github(f"edit: eventi riordinati per data ({_current_pid()})")
     return jsonify({"ok": True})
 
 @app.route("/api/live", methods=["GET"])
@@ -403,23 +411,10 @@ def search_events():
 def diagnose():
     import time as _time
     now = _time.time()
-    from dazn_navigator2.services.extractor import PROXY_WORKER, _CACHED_SERVICES
+    from dazn_navigator2.services.extractor import _CACHED_SERVICES
     results = {
-        "_proxy_worker": PROXY_WORKER,
         "_playback_endpoint": _CACHED_SERVICES.get("Playback", ""),
     }
-    # IP di uscita visto dal Worker Cloudflare (deve essere italiano, altrimenti geo-block +10013)
-    import urllib.parse, urllib.request
-    try:
-        diag_target = "https://ipinfo.io/json"
-        geo_url = f"{PROXY_WORKER}/?target={urllib.parse.quote(diag_target, safe='')}"
-        with urllib.request.urlopen(geo_url, timeout=20) as _r:
-            geo = json.loads(_r.read().decode("utf-8"))
-        results["_worker_egress_ip"] = geo.get("ip", "")
-        results["_worker_egress_country"] = geo.get("country", "")
-        results["_worker_egress_city"] = geo.get("city", "")
-    except Exception as _e:
-        results["_worker_egress_error"] = str(_e)
     for pid in PROFILES:
         profile_dir = Path(get_active_chrome_profile(pid))
         auth_file = profile_dir / "auth_token.json"
@@ -453,6 +448,7 @@ def extract_stream():
     body = request.get_json() or {}
     asset_id = body.get("asset_id") or body.get("id")
     title = body.get("title", "Evento")
+    image = body.get("image", "")
 
     if not asset_id:
         return jsonify({"ok": False, "error": "asset_id mancante"}), 400
@@ -468,11 +464,14 @@ def extract_stream():
                 "start": "",
                 "manifest": res.get("mpd_url", ""),
                 "keys": ",".join(res.get("keys", [])),
-                "logo": "",
-                "license_url": res.get("la_url", "")
+                "logo": image,
+                "license_url": res.get("la_url", ""),
+                "ext_url": res.get("ext_url", ""),
+                "kodi_url": res.get("kodi_url", ""),
+                "ua": res.get("ua", "")
             }
-            add_event("Eventi Live", entry)
-            sync_to_github(f"extract: salvato evento {title}")
+            add_event("Eventi Live", entry, _current_pid())
+            sync_to_github(f"extract: salvato evento {title} ({_current_pid()})")
         return res
 
     try:
@@ -483,7 +482,7 @@ def extract_stream():
 
 @app.route("/playlist.m3u", methods=["GET"])
 def generate_m3u():
-    data = _load()
+    data = _load(_current_pid())
     lines = ["#EXTM3U"]
     for comp, items in data.items():
         for ev in items:
