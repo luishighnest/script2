@@ -88,12 +88,14 @@ class BrowserManager:
             if not os.path.exists(chrome_bin):
                 chrome_bin = "msedge"
         try:
+            no_win = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
             subprocess.Popen(
                 [chrome_bin, '--headless=new', f'--remote-debugging-port={CDP_PORT}',
                  f'--user-data-dir={profile_dir}', '--no-first-run', '--no-sandbox',
                  '--log-level=3', '--disable-logging',
                  '--disable-blink-features=AutomationControlled', 'about:blank'],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                creationflags=no_win
             )
             for _ in range(20):
                 await asyncio.sleep(1)

@@ -152,14 +152,15 @@ def main():
     INDEX.write_text(TEMPLATE.format(link=link), encoding="utf-8")
 
     repo_url = f"https://x-access-token:{token}@github.com/luishighnest/script2.git"
+    no_win = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
     try:
-        subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True)
-        subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True)
-        subprocess.run(["git", "add", "index.html", "update_redirect.py"], cwd=str(BASE_DIR), check=True)
-        diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR))
+        subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["git", "add", "index.html", "update_redirect.py"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR), creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if diff.returncode != 0:
-            subprocess.run(["git", "commit", "-m", "redirect: supporto dynamic real-time zero-cache redirect"], cwd=str(BASE_DIR), check=True)
-            subprocess.run(["git", "push", repo_url, "HEAD:main"], cwd=str(BASE_DIR), check=True)
+            subprocess.run(["git", "commit", "-m", "redirect: supporto dynamic real-time zero-cache redirect"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "push", repo_url, "HEAD:main"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             print(f"[redirect] File index.html salvato e pushato con successo.")
         else:
             print(f"[redirect] Nessuna modifica da pushare su git.")

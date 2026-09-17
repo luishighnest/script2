@@ -87,16 +87,19 @@ def sync_to_github(commit_msg: str):
 
     repo_url = f"https://x-access-token:{token}@github.com/luishighnest/script2.git"
 
+    # Flag Windows per sopprimere totalmente la creazione di qualsiasi finestra di console
+    no_win = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+
     try:
-        subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True)
-        subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True)
-        subprocess.run(["git", "add", "saved_profiles", "profiles_config.json", "dazn_event.json", "dazn_event_*.json"], cwd=str(BASE_DIR), check=True)
+        subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["git", "add", "saved_profiles", "profiles_config.json", "dazn_event.json", "dazn_event_*.json"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # Commit se ci sono cambiamenti
-        diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR))
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR), creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if diff.returncode != 0:
-            subprocess.run(["git", "commit", "-m", commit_msg], cwd=str(BASE_DIR), check=True)
-            subprocess.run(["git", "push", repo_url, "HEAD:main"], cwd=str(BASE_DIR), check=True)
+            subprocess.run(["git", "commit", "-m", commit_msg], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "push", repo_url, "HEAD:main"], cwd=str(BASE_DIR), check=True, creationflags=no_win, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             print("[Git Sync] Salvataggio permanente su GitHub completato con successo!")
             return True, "Sync completato"
         return True, "Nessun cambiamento da committare"
