@@ -81,11 +81,13 @@ class HeadlessExtractor:
         self.result = {}
 
     def _device_id(self):
-        if DEVICE_ID_FILE.exists():
-            return DEVICE_ID_FILE.read_text().strip()
+        profile_dir = getattr(self, '_profile_dir', None)
+        did_file = Path(profile_dir) / "device_id.txt" if profile_dir else DEVICE_ID_FILE
+        if did_file.exists():
+            return did_file.read_text().strip()
         did = _uuid.uuid4().hex
-        DEVICE_ID_FILE.parent.mkdir(parents=True, exist_ok=True)
-        DEVICE_ID_FILE.write_text(did)
+        did_file.parent.mkdir(parents=True, exist_ok=True)
+        did_file.write_text(did)
         return did
 
     def _read_jwt_from_disk(self, profile_dir: Path) -> str:
@@ -145,6 +147,7 @@ class HeadlessExtractor:
         import base64 as _b64
         from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
         target_p = Path(profile_dir) if profile_dir else None
+        self._profile_dir = target_p
         if target_p:
             set_active_profile_dir(target_p)
 
@@ -210,6 +213,14 @@ class HeadlessExtractor:
                 client = await _get_http_session()
                 for c in cookies:
                     client.cookies.set(c["name"], c["value"], domain=c.get("domain", ".dazn.com"))
+            except Exception:
+                pass
+
+        # Persist JWT to auth_token.json for future cloud runs
+        if jwt and jwt.startswith("eyJ") and target_p:
+            try:
+                auth_file = Path(target_p) / "auth_token.json"
+                auth_file.write_text(json.dumps({"jwt": jwt}), encoding="utf-8")
             except Exception:
                 pass
 

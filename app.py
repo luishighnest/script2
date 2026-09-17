@@ -427,6 +427,7 @@ def extract_stream():
                 "license_url": res.get("la_url", "")
             }
             add_event("Eventi Live", entry)
+            sync_to_github(f"extract: salvato evento {title}")
         return res
 
     try:

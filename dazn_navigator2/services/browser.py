@@ -98,14 +98,6 @@ class BrowserManager:
             self._page = await self._context.new_page()
             cur = "about:blank"
 
-        # Se la pagina è su about:blank o non su DAZN, naviga su dazn.com prima di toccare localStorage
-        if "dazn.com" not in cur:
-            try:
-                await self._page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
-                await asyncio.sleep(2)
-            except Exception as e:
-                print(f"[BrowserManager] Errore navigazione su DAZN: {e}")
-
         js_check = """
         (() => {
             try {
@@ -119,6 +111,24 @@ class BrowserManager:
             } catch(e) { return false; }
         })()
         """
+
+        # Se gia' su DAZN con token valido, ritorna subito
+        if "dazn.com" in cur:
+            try:
+                if await self._page.evaluate(js_check):
+                    return
+            except Exception:
+                pass
+
+        # Naviga su DAZN per ottenere cookies e token in localStorage
+        try:
+            await self._page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
+            await asyncio.sleep(2)
+        except Exception as e:
+            print(f"[BrowserManager] Errore navigazione su DAZN: {e}")
+            return
+
+        # Verifica token dopo navigazione
         try:
             is_valid = await self._page.evaluate(js_check)
         except Exception:

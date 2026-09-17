@@ -2,3 +2,10 @@
 *.egg-info/
 *.pyc
 temp_*.zip
+saved_profiles/*/Default/Cache/
+saved_profiles/*/Default/Code Cache/
+saved_profiles/*/Default/GPUCache/
+saved_profiles/*/Default/DawnGraphiteCache/
+saved_profiles/*/Default/DawnWebGPUCache/
+saved_profiles/*/Default/chrome_debug.log
+chrome_profile/

@@ -172,7 +172,7 @@ class DaznDoctor:
         try:
             from dazn_navigator2.services.explorer import DaznExplorer
             from dazn_navigator2.services.extractor import HeadlessExtractor
-            from dazn_navigator2.auth.token_refresh import PROFILE_DIR
+            from dazn_navigator2.auth.token_refresh import get_active_profile_dir
 
             explorer = DaznExplorer()
             tiles = await explorer.get_tiles("LinearChannels") or await explorer.get_tiles("Live") or await explorer.get_tiles("Catchup")
@@ -180,7 +180,7 @@ class DaznDoctor:
                 test_tile = tiles[0]
                 console.print(f"  [dim]Test su contenuto reale:[/dim] [cyan]{test_tile.title}[/cyan]")
                 ext = HeadlessExtractor()
-                res_ext = await ext.estrai(str(PROFILE_DIR), test_tile.asset_id, test_tile.title)
+                res_ext = await ext.estrai(str(get_active_profile_dir()), test_tile.asset_id, test_tile.title)
                 
                 if res_ext.get("ok"):
                     console.print("  [green]✓ MPD & Licenza DRM estratti con successo![/green]")
