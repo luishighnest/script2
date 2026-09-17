@@ -343,19 +343,6 @@ class HeadlessExtractor:
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
 
-        # Se riceve 401 o 403: rigenera JWT e riprova
-        if not pb_r.get("ok") and pb_r.get("status") in (401, 403):
-            from dazn_navigator2.services.browser import get_browser
-            target_p = Path(profile_dir) if profile_dir else None
-            b = await get_browser(user_data_dir=target_p)
-            try:
-                await b.page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
-                await asyncio.sleep(2)
-            except Exception:
-                pass
-            page, jwt = await self._get_page_and_jwt(profile_dir)
-            pb_r = await self._chiama_api(pb_url, jwt, page=page)
-
         console.print(f"[dim]  -> 3. Playback API: {time.time() - _t:.2f}s[/dim]")
 
         if not pb_r.get("ok"):
