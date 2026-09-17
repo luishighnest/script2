@@ -11,6 +11,20 @@ from flask import Flask, render_template, jsonify, request, Response, session, r
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
+# Protezione per esecuzione nascosta/senza console (es. pythonw o script VBS)
+if sys.stdout is None:
+    try:
+        sys.stdout = open(BASE_DIR / "flask.log", "a", encoding="utf-8", buffering=1)
+    except Exception:
+        import io
+        sys.stdout = io.StringIO()
+if sys.stderr is None:
+    try:
+        sys.stderr = open(BASE_DIR / "flask.log", "a", encoding="utf-8", buffering=1)
+    except Exception:
+        import io
+        sys.stderr = io.StringIO()
+
 import threading
 from dazn_navigator2.cli.eventi_cmds import _load, _save, add_event
 from dazn_navigator2.services.explorer import DaznExplorer

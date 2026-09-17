@@ -15,29 +15,39 @@ echo   AVVIO Script2
 echo ==============================================
 echo.
 
-echo [1/4] Avvio il server Flask su localhost:5000...
+echo [1/4] Chiusura preventiva di eventuali processi precedenti...
+taskkill /f /im cloudflared.exe >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do taskkill /f /pid %%a >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+echo [2/4] Avvio il server Flask su 127.0.0.1:5000...
 if not exist "%PY%" (
     echo [ERRORE] Python non trovato: %PY%
     pause
     exit /b 1
 )
 start "Script2 - Flask" /min "%PY%" app.py
+timeout /t 2 /nobreak >nul
 
-echo [2/4] Avvio il tunnel Cloudflare (trycloudflare.com)...
+echo [3/4] Avvio il tunnel Cloudflare (trycloudflare.com)...
 if not exist "%CF%" (
     echo [ERRORE] cloudflared.exe non trovato: %CF%
     pause
     exit /b 1
 )
-start "Script2 - Tunnel" /min "%CF%" tunnel --url http://localhost:5000 --no-autoupdate --logfile "%CFLOG%" --loglevel info
+start "Script2 - Tunnel" /min "%CF%" tunnel --url http://127.0.0.1:5000 --no-autoupdate --logfile "%CFLOG%" --loglevel info
 
-echo [3/4] Attendo l'avvio del tunnel...
-timeout /t 12 /nobreak >nul
-
-echo [4/4] Estraggo il link pubblico e aggiorno il redirect GitHub Pages...
+echo [4/4] Attendo generazione del link Cloudflare e aggiorno GitHub...
 set "PUBLIC="
-for /f "tokens=*" %%L in ('findstr /C:"trycloudflare.com" "%CFLOG%"') do (
-    for /f "tokens=3" %%U in ("%%L") do set "PUBLIC=%%U"
+for /L %%i in (1,1,25) do (
+    if not defined PUBLIC (
+        timeout /t 1 /nobreak >nul
+        if exist "%CFLOG%" (
+            for /f "tokens=*" %%L in ('findstr /C:"trycloudflare.com" "%CFLOG%"') do (
+                for /f "tokens=3" %%U in ("%%L") do set "PUBLIC=%%U"
+            )
+        )
+    )
 )
 if defined PUBLIC (
     set PUBLIC=%PUBLIC:^|=%
