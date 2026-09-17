@@ -93,6 +93,22 @@ class HeadlessExtractor:
             return ""
         import re, time, base64 as _b64
         p = Path(profile_dir)
+        
+        # 1. Controlla prima il file dedicato auth_token.json
+        auth_file = p / "auth_token.json"
+        if auth_file.exists():
+            try:
+                data = json.loads(auth_file.read_text(encoding="utf-8"))
+                tok = data.get("jwt")
+                if tok and tok.startswith("eyJ"):
+                    parts = tok.split('.')
+                    pad = parts[1] + '=' * (-len(parts[1]) % 4)
+                    payload = json.loads(_b64.b64decode(pad))
+                    if payload.get("exp", 0) > time.time():
+                        return tok
+            except Exception:
+                pass
+
         leveldb_dirs = [
             p / "Default" / "Local Storage" / "leveldb",
             p / "Local Storage" / "leveldb",
@@ -133,29 +149,38 @@ class HeadlessExtractor:
             set_active_profile_dir(target_p)
 
         # Legge prima il token autenticato da disco (salvato con country: 'it')
-        jwt_disk = self._read_jwt_from_disk(target_p)
-        
-        b = await get_browser(user_data_dir=target_p)
-        jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
-        
-        # Se il token da disco ha country: it ed è ancora valido, usalo come primario
         jwt = ""
-        for candidate in [jwt_disk, jwt_browser]:
-            if candidate and candidate.startswith("eyJ"):
-                try:
-                    p = json.loads(_b64.b64decode(candidate.split(".")[1] + "===="))
-                    if p.get("country") == "it" and p.get("exp", 0) > time.time():
-                        jwt = candidate
-                        break
-                except Exception:
-                    pass
+        jwt_disk = self._read_jwt_from_disk(target_p)
+        if jwt_disk and jwt_disk.startswith("eyJ"):
+            try:
+                p = json.loads(_b64.b64decode(jwt_disk.split(".")[1] + "===="))
+                if p.get("country") == "it" and p.get("exp", 0) > time.time() + 60:
+                    jwt = jwt_disk
+                    did_jwt = p.get("deviceId", "")
+                    if did_jwt:
+                        self._real_device_id = did_jwt
+            except Exception:
+                pass
         
+        b = None
         if not jwt:
-            jwt = jwt_browser or jwt_disk
+            b = await get_browser(user_data_dir=target_p)
+            jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
+            for candidate in [jwt_disk, jwt_browser]:
+                if candidate and candidate.startswith("eyJ"):
+                    try:
+                        p = json.loads(_b64.b64decode(candidate.split(".")[1] + "===="))
+                        if p.get("country") == "it" and p.get("exp", 0) > time.time():
+                            jwt = candidate
+                            break
+                    except Exception:
+                        pass
+            if not jwt:
+                jwt = jwt_browser or jwt_disk
 
-        if not jwt or not jwt.startswith("eyJ"):
-            await b.ensure_session()
-            jwt = await b.evaluate("localStorage.getItem('MISL.authToken')") or self._read_jwt_from_disk(target_p)
+            if not jwt or not jwt.startswith("eyJ"):
+                await b.ensure_session()
+                jwt = await b.evaluate("localStorage.getItem('MISL.authToken')") or self._read_jwt_from_disk(target_p)
 
         if not jwt or not jwt.startswith("eyJ"):
             raise RuntimeError("JWT non trovato nel profilo DAZN. Assicurati che l'account sia loggato nel profilo.")
@@ -170,7 +195,7 @@ class HeadlessExtractor:
         except Exception:
             pass
 
-        if not getattr(self, "_real_device_id", None):
+        if not getattr(self, "_real_device_id", None) and b:
             try:
                 stored_did = await b.evaluate("localStorage.getItem('MISL.deviceId') || localStorage.getItem('dazn.deviceId')")
                 if stored_did:
@@ -178,16 +203,18 @@ class HeadlessExtractor:
             except Exception:
                 pass
 
-        # Sincronizza i cookie del browser (CloudFront, sessione DAZN) nella sessione curl_cffi
-        try:
-            cookies = await b.context.cookies()
-            client = await _get_http_session()
-            for c in cookies:
-                client.cookies.set(c["name"], c["value"], domain=c.get("domain", ".dazn.com"))
-        except Exception:
-            pass
+        if b:
+            # Sincronizza i cookie del browser (CloudFront, sessione DAZN) nella sessione curl_cffi
+            try:
+                cookies = await b.context.cookies()
+                client = await _get_http_session()
+                for c in cookies:
+                    client.cookies.set(c["name"], c["value"], domain=c.get("domain", ".dazn.com"))
+            except Exception:
+                pass
 
-        return b.page, jwt
+        return (b.page if b else None), jwt
+
 
     async def _chiama_api(self, url, jwt, method="GET", body_obj=None, page=None, cdn_token=None):
         import json
