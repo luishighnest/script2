@@ -127,6 +127,7 @@ class HeadlessExtractor:
     async def _get_page_and_jwt(self, profile_dir=None):
         """Recupera il page object e JWT dal BrowserManager o direttamente dal profilo."""
         import base64 as _b64
+        from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
         target_p = Path(profile_dir) if profile_dir else None
         if target_p:
             set_active_profile_dir(target_p)
