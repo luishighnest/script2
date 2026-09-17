@@ -1,8 +1,11 @@
-{
+﻿{
   "pz8": {
-    "chrome_profile_path": "saved_profiles\\profile_pz8\\Profile"
+    "chrome_profile_path": "saved_profiles/profile_pz8"
   },
   "prova": {
+    "chrome_profile_path": null
+  },
+  "mpd": {
     "chrome_profile_path": null
   }
 }
