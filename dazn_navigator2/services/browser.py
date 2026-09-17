@@ -199,23 +199,29 @@ class BrowserManager:
         self._playwright = None
 
 _browser = None
+_browser_user_data_dir = None
 
 async def get_browser(user_data_dir: Path = None) -> BrowserManager:
-    global _browser
+    global _browser, _browser_user_data_dir
+    target_dir = Path(user_data_dir) if user_data_dir else get_active_profile_dir()
     if _browser is not None:
         try:
-            if _browser._page is not None:
+            # Se la directory profilo richiesta è cambiata, chiudi il browser precedente
+            if _browser_user_data_dir != target_dir:
+                await _browser.close()
+                _browser = None
+            elif _browser._page is not None:
                 await _browser._page.evaluate('1')
                 return _browser
         except Exception:
-            pass
-        try:
-            await _browser.close()
-        except Exception:
-            pass
-        _browser = None
+            try:
+                await _browser.close()
+            except Exception:
+                pass
+            _browser = None
     _browser = BrowserManager()
-    await _browser.start(user_data_dir=user_data_dir)
+    _browser_user_data_dir = target_dir
+    await _browser.start(user_data_dir=target_dir)
     return _browser
 
 async def close_browser():
