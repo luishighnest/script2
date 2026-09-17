@@ -127,19 +127,15 @@ class HeadlessExtractor:
     async def _get_page_and_jwt(self, profile_dir=None):
         """Recupera il page object e JWT dal BrowserManager o direttamente dal profilo."""
         import base64 as _b64
-        from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
-        if profile_dir:
-            set_active_profile_dir(Path(profile_dir))
+        target_p = Path(profile_dir) if profile_dir else None
+        if target_p:
+            set_active_profile_dir(target_p)
 
-        b = await get_browser()
+        b = await get_browser(user_data_dir=target_p)
+        await b.ensure_session()
         jwt = await b.evaluate("localStorage.getItem('MISL.authToken')")
         if not jwt or not jwt.startswith("eyJ"):
-            await b.ensure_session()
-            jwt = await b.evaluate("localStorage.getItem('MISL.authToken')")
-
-        # Fallback se evaluate non trova il token nel DOM (es. document SecurityError)
-        if not jwt or not jwt.startswith("eyJ"):
-            jwt = self._read_jwt_from_disk(profile_dir)
+            jwt = self._read_jwt_from_disk(target_p)
 
         if not jwt or not jwt.startswith("eyJ"):
             raise RuntimeError("JWT non trovato nel profilo DAZN. Assicurati che l'account sia loggato nel profilo.")
@@ -303,9 +299,10 @@ class HeadlessExtractor:
         # Se riceve 401 o 403: rigenera JWT e riprova
         if not pb_r.get("ok") and pb_r.get("status") in (401, 403):
             from dazn_navigator2.services.browser import get_browser
-            b = await get_browser()
+            target_p = Path(profile_dir) if profile_dir else None
+            b = await get_browser(user_data_dir=target_p)
             try:
-                await b.page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=15000)
+                await b.page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
                 await asyncio.sleep(2)
             except Exception:
                 pass
