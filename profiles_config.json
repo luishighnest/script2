@@ -1,5 +1,8 @@
 {
+  "pz8": {
+    "chrome_profile_path": "saved_profiles/profile_pz8"
+  },
   "prova": {
-    "chrome_profile_path": "saved_profiles\\profile_prova\\Smile"
+    "chrome_profile_path": null
   }
 }
