@@ -23,7 +23,7 @@ _WVD_LOCAL = Path(__file__).resolve().parent.parent.parent / "device.wvd"
 
 WVD_PATH = str(_WVD_LOCAL) if _WVD_LOCAL.exists() else None
 
-for scan_path in ([] if WVD_PATH else [r"./"]):
+for scan_path in ([] if WVD_PATH else [r"./", r"C:\Users\alecl\Desktop\l3-keys-main\l3-keys-main", r"C:\Users\alecl\Desktop\2225908683", r"C:\Users\alecl\Desktop"]):
 
     for root, dirs, files in os.walk(scan_path):
 
@@ -49,8 +49,11 @@ DEVICE_ID_FILE = Path(__file__).resolve().parent.parent.parent / "chrome_profile
 
 # Sessione HTTP globale persistente con connection pooling
 _GLOBAL_SESSION = None
+_DEFAULT_WORKER = "https://script2.masked.workers.dev"
+PROXY_WORKER = (os.environ.get("DAZN_PROXY_WORKER") or "").strip().rstrip("/") or _DEFAULT_WORKER
+
 _CACHED_SERVICES = {
-    "Playback": "https://api.playback.indazn.com/v5/Playback",
+    "Playback": f"{PROXY_WORKER}/v5/Playback" if PROXY_WORKER else "https://api.playback.indazn.com/v5/Playback",
     "Rails": "https://rails.discovery.indazn.com/eu/v9/rails",
     "Rail": "https://rail.discovery.indazn.com/eu/v1/Rail",
     "Search": "https://search.discovery.indazn.com/v1/search",
@@ -454,8 +457,18 @@ class HeadlessExtractor:
             r_mpd_resp = await client.get(fetch_mpd_url, headers=mpd_hdrs, timeout=10)
             if r_mpd_resp.status_code == 200:
                 mpd_r = {"ok": True, "status": 200, "body": r_mpd_resp.text}
-            elif page:
-                mpd_r = await page.evaluate(
+            else:
+                # Fallback tramite Cloudflare Worker proxy
+                if PROXY_WORKER:
+                    import urllib.parse
+                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(fetch_mpd_url)}"
+                    r_worker = await client.get(worker_mpd, headers=mpd_hdrs, timeout=10)
+                    if r_worker.status_code == 200:
+                        mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
+                    else:
+                        mpd_r = {"ok": False, "status": r_worker.status_code, "body": r_worker.text}
+                elif page:
+                    mpd_r = await page.evaluate(
                         """async ({url, token}) => {
                             try {
                                 const r = await fetch(url, { headers: { "dazn-token": token } });
@@ -464,10 +477,22 @@ class HeadlessExtractor:
                         }""",
                         {"url": fetch_mpd_url, "token": dazn_token}
                     )
-            else:
-                mpd_r = {"ok": False, "status": r_mpd_resp.status_code, "body": r_mpd_resp.text}
+                else:
+                    mpd_r = {"ok": False, "status": r_mpd_resp.status_code, "body": r_mpd_resp.text}
         except Exception as e:
-            mpd_r = {"ok": False, "error": str(e)}
+            if PROXY_WORKER:
+                try:
+                    import urllib.parse
+                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(fetch_mpd_url)}"
+                    r_worker = await client.get(worker_mpd, headers=mpd_hdrs, timeout=10)
+                    if r_worker.status_code == 200:
+                        mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
+                    else:
+                        mpd_r = {"ok": False, "status": r_worker.status_code, "body": r_worker.text}
+                except Exception as we:
+                    mpd_r = {"ok": False, "error": str(we)}
+            else:
+                mpd_r = {"ok": False, "error": str(e)}
 
         console.print(f"[dim]  -> 4. Fetch MPD: {time.time() - _t:.2f}s[/dim]")
 
@@ -553,16 +578,44 @@ class HeadlessExtractor:
                 if lic_resp.status_code == 200:
                     lr = {"ok": True, "body": base64.b64encode(lic_resp.content).decode("ascii")}
                 else:
-                    lr = {
-                        "ok": False,
-                        "status": lic_resp.status_code,
-                        "bodyText": lic_resp.text,
-                        "headers": dict(lic_resp.headers),
-                        "browser_res": lr
-                    }
+                    # Fallback tramite Cloudflare Worker proxy
+                    if PROXY_WORKER:
+                        import urllib.parse
+                        worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
+                        r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
+                        if r_w.status_code == 200:
+                            lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
+                        else:
+                            lr = {
+                                "ok": False,
+                                "status": r_w.status_code,
+                                "bodyText": r_w.text,
+                                "headers": dict(r_w.headers),
+                                "browser_res": lr
+                            }
+                    else:
+                        lr = {
+                            "ok": False,
+                            "status": lic_resp.status_code,
+                            "bodyText": lic_resp.text,
+                            "headers": dict(lic_resp.headers),
+                            "browser_res": lr
+                        }
             except Exception as e:
-                if not lr:
-                    lr = {"ok": False, "error": str(e)}
+                if PROXY_WORKER:
+                    try:
+                        import urllib.parse
+                        worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
+                        r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
+                        if r_w.status_code == 200:
+                            lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
+                        else:
+                            lr = {"ok": False, "status": r_w.status_code, "bodyText": r_w.text}
+                    except Exception as we:
+                        lr = {"ok": False, "error": str(we)}
+                else:
+                    if not lr:
+                        lr = {"ok": False, "error": str(e)}
 
         if not lr or not lr.get("ok"):
             err_msg = f"Licenza: {lr.get('status','?')} - Motivo: {lr.get('statusText', '')} {lr.get('bodyText', '')[:300]} {lr.get('error', '')}".strip()
