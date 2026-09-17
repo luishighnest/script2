@@ -98,6 +98,50 @@ def _image_url(img) -> str:
         return ""
     return str(img) if img else ""
 
+def _build_mpd_auth(mpd_url: str, dazn_token: str) -> str:
+    """Inserisce il token nel path (@token/...) come richiesto dall'addon e dal formato dazn11."""
+    if not dazn_token or not mpd_url:
+        return mpd_url
+    if "/@" in mpd_url:
+        return mpd_url
+    if "://" in mpd_url:
+        proto, rest = mpd_url.split("://", 1)
+        if "/" in rest:
+            host, path = rest.split("/", 1)
+            return f"{proto}://{host}/@{dazn_token}/{path}"
+        return f"{proto}://{rest}/@{dazn_token}"
+    return mpd_url
+
+def _format_tile_item(t):
+    raw = getattr(t, 'raw', {}) or {}
+    sport = raw.get("Sport", {})
+    if isinstance(sport, dict):
+        sport = sport.get("Title", "")
+    elif sport:
+        sport = str(sport)
+    else:
+        sport = ""
+
+    comp = raw.get("Competition", {})
+    if isinstance(comp, dict):
+        comp = comp.get("Title", "")
+    elif comp:
+        comp = str(comp)
+    else:
+        comp = ""
+
+    return {
+        "id": t.id,
+        "asset_id": getattr(t, 'asset_id', None) or t.id,
+        "title": t.title,
+        "sport": sport,
+        "competition": comp or "Eventi",
+        "image": _image_url(t.image),
+        "tile_type": t.tile_type,
+        "start": raw.get("Start") or "",
+        "end": raw.get("End") or "",
+    }
+
 def get_active_chrome_profile(profile_id):
     cfg = load_profiles_config()
     p = cfg.get(profile_id, {}).get("chrome_profile_path")
@@ -303,25 +347,7 @@ def get_live_events():
     async def _fetch():
         explorer = DaznExplorer()
         tiles = await explorer.get_tiles("Live")
-        items = []
-        for t in tiles:
-            raw = t.raw or {}
-            sport = raw.get("Sport", {})
-            if isinstance(sport, dict):
-                sport = sport.get("Title", "")
-            comp = raw.get("Competition", {})
-            if isinstance(comp, dict):
-                comp = comp.get("Title", "")
-
-            items.append({
-                "id": t.id,
-                "asset_id": t.asset_id or t.id,
-                "title": t.title,
-                "sport": sport,
-                "competition": comp,
-                "image": _image_url(t.image),
-                "tile_type": t.tile_type
-            })
+        items = [_format_tile_item(t) for t in tiles]
         await explorer.close()
         return items
 
@@ -339,25 +365,7 @@ def get_vod_events():
     async def _fetch():
         explorer = DaznExplorer()
         tiles = await explorer.get_tiles("Catchup")
-        items = []
-        for t in tiles:
-            raw = t.raw or {}
-            sport = raw.get("Sport", {})
-            if isinstance(sport, dict):
-                sport = sport.get("Title", "")
-            comp = raw.get("Competition", {})
-            if isinstance(comp, dict):
-                comp = comp.get("Title", "")
-
-            items.append({
-                "id": t.id,
-                "asset_id": t.asset_id or t.id,
-                "title": t.title,
-                "sport": sport,
-                "competition": comp,
-                "image": _image_url(t.image),
-                "tile_type": t.tile_type
-            })
+        items = [_format_tile_item(t) for t in tiles]
         await explorer.close()
         return items
 
@@ -379,25 +387,7 @@ def search_events():
     async def _fetch():
         explorer = DaznExplorer()
         tiles = await explorer.search(q)
-        items = []
-        for t in tiles:
-            raw = t.raw or {}
-            sport = raw.get("Sport", {})
-            if isinstance(sport, dict):
-                sport = sport.get("Title", "")
-            comp = raw.get("Competition", {})
-            if isinstance(comp, dict):
-                comp = comp.get("Title", "")
-
-            items.append({
-                "id": t.id,
-                "asset_id": t.asset_id or t.id,
-                "title": t.title,
-                "sport": sport,
-                "competition": comp,
-                "image": _image_url(t.image),
-                "tile_type": t.tile_type
-            })
+        items = [_format_tile_item(t) for t in tiles]
         await explorer.close()
         return items
 
@@ -450,6 +440,9 @@ def extract_stream():
     asset_id = body.get("asset_id") or body.get("id")
     title = body.get("title", "Evento")
     image = body.get("image", "")
+    competition = (body.get("competition") or "").strip()
+    start = body.get("start") or ""
+    end = body.get("end") or ""
 
     if not asset_id:
         return jsonify({"ok": False, "error": "asset_id mancante"}), 400
@@ -457,22 +450,65 @@ def extract_stream():
     target_profile_dir = get_active_chrome_profile(pid)
 
     async def _do_extract():
+        nonlocal competition, start, end
+        # Fallback metadata se start/end/competition non passati
+        if not start or not end or not competition or competition in ("Eventi Live", "Eventi"):
+            try:
+                from dazn_navigator2.services.extractor import _get_http_session
+                client = await _get_http_session()
+                ci_url = f"https://contentitem.discovery.indazn.com/eu/v1/contentitem?Id={asset_id}"
+                r_ci = await client.get(ci_url, timeout=4)
+                if r_ci.status_code == 200:
+                    ci_data = r_ci.json()
+                    item = ci_data.get("ContentItem") or ci_data.get("Event") or ci_data
+                    if not start:
+                        start = item.get("Start") or ""
+                    if not end:
+                        end = item.get("End") or ""
+                    if not competition or competition in ("Eventi Live", "Eventi"):
+                        c = item.get("Competition")
+                        if isinstance(c, dict):
+                            competition = c.get("Title") or competition
+                        elif c:
+                            competition = str(c)
+            except Exception:
+                pass
+
+        if not competition:
+            competition = "Eventi"
+
         ext = HeadlessExtractor()
         res = await ext.estrai(target_profile_dir, asset_id, title)
         if res.get("ok"):
+            mpd_url = res.get("mpd_url", "")
+            dazn_token = res.get("dazn_token", "")
+            mpd_auth = _build_mpd_auth(mpd_url, dazn_token)
+            keys_str = ",".join(res.get("keys", []))
+            ua_str = res.get("ua", "")
+            logo = image or _image_url(res.get("image"))
+
             entry = {
                 "name": res.get("titolo", title),
-                "start": "",
-                "manifest": res.get("mpd_url", ""),
-                "keys": ",".join(res.get("keys", [])),
-                "logo": image,
+                "image": logo,
+                "start": start,
+                "end": end,
+                "mpd": mpd_auth,
+                "key": keys_str,
+                "ua": ua_str,
+                # Campi per retrocompatibilità Kodi / m3u / estensione
+                "manifest": mpd_auth,
+                "keys": keys_str,
+                "logo": logo,
                 "license_url": res.get("la_url", ""),
                 "ext_url": res.get("ext_url", ""),
-                "kodi_url": res.get("kodi_url", ""),
-                "ua": res.get("ua", "")
+                "kodi_url": res.get("kodi_url", "")
             }
-            add_event("Eventi Live", entry, _current_pid())
+            add_event(competition, entry, _current_pid())
             sync_to_github(f"extract: salvato evento {title} ({_current_pid()})")
+            res["mpd_url"] = mpd_auth
+            res["mpd_auth"] = mpd_auth
+            res["entry"] = entry
+            res["competition"] = competition
         return res
 
     try:
@@ -488,9 +524,9 @@ def generate_m3u():
     for comp, items in data.items():
         for ev in items:
             name = ev.get("name", "Evento")
-            logo = ev.get("logo", "")
-            mpd = ev.get("manifest", "")
-            keys = ev.get("keys", "")
+            logo = ev.get("logo") or ev.get("image", "")
+            mpd = ev.get("mpd") or ev.get("manifest", "")
+            keys = ev.get("key") or ev.get("keys", "")
             
             props = f'#EXTINF:-1 tvg-name="{name}" tvg-logo="{logo}" group-title="{comp}",{name}'
             if keys:

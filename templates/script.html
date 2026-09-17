@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -603,11 +603,34 @@ if (data.ok) {
                 container.innerHTML = '';
                 
                 const entries = [];
+                const cleanData = {};
+
                 for (const [comp, items] of Object.entries(data)) {
-                    items.forEach((ev, idx) => entries.push({ comp, idx, ...ev }));
+                    cleanData[comp] = [];
+                    items.forEach((ev, idx) => {
+                        const mpd = ev.mpd || ev.manifest || '';
+                        const keys = ev.key || ev.keys || '';
+                        const extUrl = ev.ext_url || '';
+                        const ua = ev.ua || '';
+                        const image = ev.image || ev.logo || '';
+                        const start = ev.start || '';
+                        const end = ev.end || '';
+
+                        const itemObj = {
+                            name: ev.name || 'Senza Titolo',
+                            image: image,
+                            start: start,
+                            end: end,
+                            mpd: mpd,
+                            key: keys,
+                            ua: ua
+                        };
+                        cleanData[comp].push(itemObj);
+                        entries.push({ comp, idx, extUrl, itemObj });
+                    });
                 }
 
-document.getElementById('count-extracted').innerText = entries.length;
+                document.getElementById('count-extracted').innerText = entries.length;
 
                 if (entries.length === 0) {
                     container.innerHTML = `
@@ -617,48 +640,40 @@ document.getElementById('count-extracted').innerText = entries.length;
                         </div>
                     `;
                     document.getElementById('extracted-json').innerText = 'Nessun evento...';
+                    window.__eventsJson = '';
                     return;
                 }
 
-                const fullJsonBlocks = [];
-
-entries.forEach((ev, eidx) => {
+                entries.forEach((entryInfo, eidx) => {
                     const col = document.createElement('div');
                     col.className = 'poster-col';
 
-                    const mpd = ev.manifest || ev.mpd || '';
-                    const keys = ev.keys || ev.key || '';
-                    const extUrl = ev.ext_url || '';
-                    const ua = ev.ua || '';
+                    const { comp, idx, extUrl, itemObj } = entryInfo;
+                    const mpd = itemObj.mpd;
+                    const keys = itemObj.key;
 
-                    const jsonObj = {
-                        name: ev.name || 'Senza Titolo',
-                        image: ev.logo || ev.image || '',
-                        start: ev.start || '',
-                        end: ev.end || '',
-                        mpd: mpd,
-                        key: keys,
-                        ua: ua
+                    // Output JSON per il singolo evento raggruppato (formato fedele a dazn11)
+                    const singleGroupedObj = {
+                        [comp]: [ itemObj ]
                     };
-                    const jsonStr = JSON.stringify(jsonObj, null, 2);
+                    const jsonStr = JSON.stringify(singleGroupedObj, null, 3);
                     window.__extractedEntries[eidx] = { mpd, keys, extUrl, jsonStr };
-                    fullJsonBlocks.push(jsonStr);
 
                     col.innerHTML = `
                         <div class="extracted-card">
                             <div class="extracted-card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="poster-title mb-0">${ev.name || 'Senza Titolo'}</h6>
+                                    <h6 class="poster-title mb-0">${itemObj.name}</h6>
                                     <div class="d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="openRenameModal('${encodeURIComponent(ev.comp)}', ${ev.idx}, '${encodeURIComponent(ev.name || '')}')" title="Rinomina">
+                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="openRenameModal('${encodeURIComponent(comp)}', ${idx}, '${encodeURIComponent(itemObj.name)}')" title="Rinomina">
                                             <i class="fa-solid fa-pen"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="deleteEvent('${encodeURIComponent(ev.comp)}', ${ev.idx})" title="Elimina">
+                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="deleteEvent('${encodeURIComponent(comp)}', ${idx})" title="Elimina">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
                                 </div>
-                                <div class="badge-extracted mb-2"><i class="fa-solid fa-check me-1"></i>Estratto</div>
+                                <div class="badge-extracted mb-2"><i class="fa-solid fa-check me-1"></i>${comp}</div>
                                 <div class="d-flex gap-1 mb-2">
                                     <button class="btn btn-outline-mini flex-fill" onclick='copyEntry(${eidx}, "mpd", "Manifest MPD copiato!")'>
                                         <i class="fa-solid fa-copy"></i> MPD
@@ -680,10 +695,10 @@ entries.forEach((ev, eidx) => {
                             </div>
                         </div>
                     `;
-container.appendChild(col);
+                    container.appendChild(col);
                 });
 
-                const fullJson = fullJsonBlocks.join('\n\n');
+                const fullJson = JSON.stringify(cleanData, null, 3);
                 window.__eventsJson = fullJson;
                 document.getElementById('extracted-json').innerText = fullJson;
             } catch (err) {
@@ -870,9 +885,9 @@ tiles.forEach(t => {
                     badgeText = t.tile_type || 'RISULTATO';
                 }
 
-col.innerHTML = `
+                col.innerHTML = `
                     <div class="card-event">
-                        <div class="now-card-wrapper" onclick="${isNav ? '' : `extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}', '${t.image ? encodeURIComponent(t.image) : ''}')`}" title="${isNav ? '' : 'Estrai Flusso'}">
+                        <div class="now-card-wrapper" onclick="${isNav ? '' : `extractItem('${t.id}', '${t.asset_id}', '${encodeURIComponent(t.title)}', '${t.image ? encodeURIComponent(t.image) : ''}', '${encodeURIComponent(t.competition || '')}', '${encodeURIComponent(t.start || '')}', '${encodeURIComponent(t.end || '')}')`}" title="${isNav ? '' : 'Estrai Flusso'}">
                             <div class="now-card">
                                 ${t.image ? `<img src="${t.image}" class="card-img-top" alt="${t.title}" onerror="this.style.display='none'">` : ''}
                                 <div class="now-card-vignette"></div>
@@ -910,12 +925,16 @@ col.innerHTML = `
             }
         }
 
-async function extractItem(id, asset_id, encodedTitle, encodedImage = '') {
+        async function extractItem(id, asset_id, encodedTitle, encodedImage = '', encodedComp = '', encodedStart = '', encodedEnd = '') {
             if (!hasFolder) {
                 showZipSetup("Per estrarre devi prima caricare il Chrome Profile (.zip) di questo profilo. Caricalo qui sotto, poi riprova l'estrazione.");
                 return;
             }
             const title = decodeURIComponent(encodedTitle);
+            const competition = encodedComp ? decodeURIComponent(encodedComp) : '';
+            const start = encodedStart ? decodeURIComponent(encodedStart) : '';
+            const end = encodedEnd ? decodeURIComponent(encodedEnd) : '';
+
             document.getElementById('modalTitle').innerText = "Estrazione in corso...";
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center py-4">
@@ -930,7 +949,15 @@ async function extractItem(id, asset_id, encodedTitle, encodedImage = '') {
                 const res = await fetch('/api/extract', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, asset_id, title, image: encodedImage ? decodeURIComponent(encodedImage) : '' })
+                    body: JSON.stringify({
+                        id,
+                        asset_id,
+                        title,
+                        image: encodedImage ? decodeURIComponent(encodedImage) : '',
+                        competition,
+                        start,
+                        end
+                    })
                 });
 
                 let result;
