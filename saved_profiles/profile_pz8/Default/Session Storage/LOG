@@ -1,2 +1,3 @@
-2026/09/17-17:26:05.150 3564 Creating DB C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Session Storage since it was missing.
-2026/09/17-17:26:05.181 3564 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Session Storage/MANIFEST-000001
+2026/09/17-17:53:20.222 ccc Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Session Storage/MANIFEST-000001
+2026/09/17-17:53:20.227 ccc Recovering log #3
+2026/09/17-17:53:20.228 ccc Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Session Storage/000003.log 

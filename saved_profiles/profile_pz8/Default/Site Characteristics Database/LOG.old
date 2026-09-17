@@ -1,3 +1,5 @@
-2026/09/16-19:35:11.280 1984 Reusing MANIFEST C:\Users\alecl\Desktop\dazn11\chrome_profile\Default\Site Characteristics Database/MANIFEST-000001
-2026/09/16-19:35:11.283 1984 Recovering log #3
-2026/09/16-19:35:11.283 1984 Reusing old log C:\Users\alecl\Desktop\dazn11\chrome_profile\Default\Site Characteristics Database/000003.log 
+2026/09/17-17:38:28.617 3218 Log #3: 2 ops saved to Table #4 OK
+2026/09/17-17:38:28.636 3218 Archiving C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Site Characteristics Database/000003.log: OK
+2026/09/17-17:38:28.636 3218 Table #4: 2 entries OK
+2026/09/17-17:38:28.645 3218 Archiving C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Site Characteristics Database/MANIFEST-000001: OK
+2026/09/17-17:38:28.671 3218 **** Repaired leveldb C:\Users\alecl\Desktop\script2\saved_profiles\profile_pz8\Default\Site Characteristics Database; recovered 1 files; 191 bytes. Some data may have been lost. ****
