@@ -408,6 +408,18 @@ def diagnose():
         "_proxy_worker": PROXY_WORKER,
         "_playback_endpoint": _CACHED_SERVICES.get("Playback", ""),
     }
+    # IP di uscita visto dal Worker Cloudflare (deve essere italiano, altrimenti geo-block +10013)
+    import urllib.parse, urllib.request
+    try:
+        diag_target = "https://ipinfo.io/json"
+        geo_url = f"{PROXY_WORKER}/?target={urllib.parse.quote(diag_target, safe='')}"
+        with urllib.request.urlopen(geo_url, timeout=20) as _r:
+            geo = json.loads(_r.read().decode("utf-8"))
+        results["_worker_egress_ip"] = geo.get("ip", "")
+        results["_worker_egress_country"] = geo.get("country", "")
+        results["_worker_egress_city"] = geo.get("city", "")
+    except Exception as _e:
+        results["_worker_egress_error"] = str(_e)
     for pid in PROFILES:
         profile_dir = Path(get_active_chrome_profile(pid))
         auth_file = profile_dir / "auth_token.json"
