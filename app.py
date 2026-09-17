@@ -76,7 +76,7 @@ def sync_to_github(commit_msg: str):
     try:
         subprocess.run(["git", "config", "user.name", "Render Auto-Sync"], cwd=str(BASE_DIR), check=True)
         subprocess.run(["git", "config", "user.email", "render-sync@users.noreply.github.com"], cwd=str(BASE_DIR), check=True)
-        subprocess.run(["git", "add", "profiles_config.json", "dazn_event.json", "dazn_event_*.json"], cwd=str(BASE_DIR), check=True)
+        subprocess.run(["git", "add", "saved_profiles", "profiles_config.json", "dazn_event.json", "dazn_event_*.json"], cwd=str(BASE_DIR), check=True)
         
         # Commit se ci sono cambiamenti
         diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(BASE_DIR))
