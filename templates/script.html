@@ -295,9 +295,51 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
+
+        /* Notifiche Toast Flottanti in Basso a Destra */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            pointer-events: none;
+        }
+        .extract-toast {
+            pointer-events: auto;
+            background: rgba(15, 20, 28, 0.95);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .extract-toast.loading { border-left: 4px solid #38bdf8; }
+        .extract-toast.success { border-left: 4px solid #00e59b; }
+        .extract-toast.error { border-left: 4px solid #f85149; }
+        .toast-icon { font-size: 1.25rem; flex-shrink: 0; }
+        .toast-content { flex-grow: 1; min-width: 0; }
+        .toast-title { font-size: 0.84rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+        .toast-desc { font-size: 0.72rem; color: #94a3b8; }
+        @keyframes toastSlideIn {
+            from { transform: translateX(50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+
+    <div id="toast-container"></div>
 
     <!-- SCHERMATA CARICAMENTO ZIP (SE NON ANCORA CONFIGURATO) -->
     <div id="section-profile-setup" class="container d-none">
@@ -964,6 +1006,59 @@ tiles.forEach(t => {
             }
         }
 
+        function createToast(title) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'extract-toast loading';
+            toast.innerHTML = `
+                <div class="toast-icon text-info">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-desc">Estrazione chiavi e MPD in corso...</div>
+                </div>
+            `;
+            container.appendChild(toast);
+            return toast;
+        }
+
+        function updateToastSuccess(toast, title) {
+            toast.className = 'extract-toast success';
+            toast.innerHTML = `
+                <div class="toast-icon text-success">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-desc text-success">Estratto e salvato con successo!</div>
+                </div>
+            `;
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+
+        function updateToastError(toast, title, errorMsg) {
+            toast.className = 'extract-toast error';
+            toast.innerHTML = `
+                <div class="toast-icon text-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-desc text-danger">${errorMsg || 'Errore durante l\'estrazione'}</div>
+                </div>
+            `;
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
         async function extractItem(id, asset_id, encodedTitle, encodedImage = '', encodedComp = '', encodedStart = '', encodedEnd = '') {
             if (!hasFolder) {
                 showZipSetup("Per estrarre devi prima caricare il Chrome Profile (.zip) di questo profilo. Caricalo qui sotto, poi riprova l'estrazione.");
@@ -974,15 +1069,8 @@ tiles.forEach(t => {
             const start = encodedStart ? decodeURIComponent(encodedStart) : '';
             const end = encodedEnd ? decodeURIComponent(encodedEnd) : '';
 
-            document.getElementById('modalTitle').innerText = "Estrazione in corso...";
-            document.getElementById('modalBody').innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner-border text-warning mb-3"></div>
-                    <h5>Estrazione chiavi per: ${title}</h5>
-                    <p class="text-secondary small">Recupero JWT, Playback API, MPD e negoziazione licenza CDM Widevine...</p>
-                </div>
-            `;
-            modal.show();
+            // Notifica non bloccante in basso a destra (l'utente può continuare a navigare)
+            const toast = createToast(title);
 
             try {
                 const res = await fetch('/api/extract', {
@@ -1009,32 +1097,13 @@ tiles.forEach(t => {
                 }
 
                 if (result.ok) {
-                    document.getElementById('modalTitle').innerText = "Estrazione Riuscita!";
-                    document.getElementById('modalBody').innerHTML = `
-                        <div class="alert alert-success"><i class="fa-solid fa-circle-check me-2"></i>Stream estratto e salvato con successo!</div>
-                        <h6>${title}</h6>
-                        <div class="mb-3 mt-3">
-                            <label class="form-label text-secondary small">Manifest URL (MPD):</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control bg-dark text-white border-secondary" value="${result.mpd_url}" readonly>
-                                <button class="btn btn-outline-warning" onclick='copyText("${result.mpd_url}", "Copiato!")'>Copia</button>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small">Chiavi Widevine (KID:KEY):</label>
-                            <div class="key-box">${result.keys.join('<br>')}</div>
-                        </div>
-                    `;
+                    updateToastSuccess(toast, title);
                     loadExtracted();
                 } else {
-                    document.getElementById('modalTitle').innerText = "Errore Estrazione";
-                    document.getElementById('modalBody').innerHTML = `
-                        <div class="alert alert-danger"><i class="fa-solid fa-circle-xmark me-2"></i>${result.error || 'Errore durante l\'estrazione'}</div>
-                    `;
+                    updateToastError(toast, title, result.error);
                 }
             } catch (err) {
-                document.getElementById('modalTitle').innerText = "Errore";
-                document.getElementById('modalBody').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+                updateToastError(toast, title, err.message);
             }
         }
 
