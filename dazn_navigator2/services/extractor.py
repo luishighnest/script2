@@ -132,11 +132,30 @@ class HeadlessExtractor:
         if target_p:
             set_active_profile_dir(target_p)
 
+        # Legge prima il token autenticato da disco (salvato con country: 'it')
+        jwt_disk = self._read_jwt_from_disk(target_p)
+        
         b = await get_browser(user_data_dir=target_p)
-        await b.ensure_session()
-        jwt = await b.evaluate("localStorage.getItem('MISL.authToken')")
+        jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
+        
+        # Se il token da disco ha country: it ed è ancora valido, usalo come primario
+        jwt = ""
+        for candidate in [jwt_disk, jwt_browser]:
+            if candidate and candidate.startswith("eyJ"):
+                try:
+                    p = json.loads(_b64.b64decode(candidate.split(".")[1] + "===="))
+                    if p.get("country") == "it" and p.get("exp", 0) > time.time():
+                        jwt = candidate
+                        break
+                except Exception:
+                    pass
+        
+        if not jwt:
+            jwt = jwt_browser or jwt_disk
+
         if not jwt or not jwt.startswith("eyJ"):
-            jwt = self._read_jwt_from_disk(target_p)
+            await b.ensure_session()
+            jwt = await b.evaluate("localStorage.getItem('MISL.authToken')") or self._read_jwt_from_disk(target_p)
 
         if not jwt or not jwt.startswith("eyJ"):
             raise RuntimeError("JWT non trovato nel profilo DAZN. Assicurati che l'account sia loggato nel profilo.")
