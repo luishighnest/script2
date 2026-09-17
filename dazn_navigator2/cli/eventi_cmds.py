@@ -57,59 +57,51 @@ def _iter_entries(data):
             n += 1
 
 
-def _clean_base_and_warp(name: str):
+def _clean_base_title(name: str) -> str:
     import re
-    is_warp = "(WARP)" in name.upper()
     cleaned = re.sub(r'\s*\(WARP\)\s*', ' ', name, flags=re.IGNORECASE)
     cleaned = re.sub(r'\s*\(\d+\)\s*', ' ', cleaned)
     cleaned = re.sub(r'\s+\d+\s*$', '', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    return cleaned, is_warp
+    return cleaned
 
-def _format_target_name(base: str, is_warp: bool, num: int = 1) -> str:
-    if not is_warp:
-        return base if num == 1 else f"{base} ({num})"
-    else:
-        return f"{base} (WARP)" if num == 1 else f"{base} (WARP) {num}"
 
 def add_event(comp_title, entry, profile_id=None):
-    """Aggiunge/sostituisce un evento in modo ultra-ottimizzato (Standard / WARP) come in DAZN1."""
-    import re
+    """Aggiunge o aggiorna un evento nella lista per competizione."""
     data = _load(profile_id)
     comp_title = comp_title or "Eventi"
     grp = data.setdefault(comp_title, [])
     entry_url = entry.get("mpd") or entry.get("url") or ""
     entry_name = entry.get("name", "")
 
-    base_name, entry_is_warp = _clean_base_and_warp(entry_name)
+    base_name = _clean_base_title(entry_name)
 
-    # 1. Se esiste già lo stesso URL identico, sostituiscilo subito
-    existing_same_url = [e for e in grp if (e.get("mpd") or e.get("url")) == entry_url and entry_url]
-    if existing_same_url:
+    # 1. Se esiste già lo stesso URL identico, rimuovilo (verrà riaggiunto aggiornato)
+    if entry_url:
         grp[:] = [e for e in grp if (e.get("mpd") or e.get("url")) != entry_url]
 
     # 2. Gestione canali lineari (DAZN, Eurosport, ecc.) o eventi:
-    same_family = []
-    for e in grp:
-        b, w = _clean_base_and_warp(e.get("name", ""))
-        if b.lower() == base_name.lower() and w == entry_is_warp:
-            same_family.append(e)
-
     is_channel = (entry.get("end", "").startswith("3000") or 
                   comp_title.lower() in ("canali lineari", "live tv") or 
-                  "dazn" in base_name.lower())
+                  any(k in base_name.lower() for k in ("dazn", "eurosport", "milan tv", "inter tv")))
 
-    if is_channel and same_family:
-        target_name = _format_target_name(base_name, entry_is_warp, 1)
-        grp[:] = [e for e in grp if e.get("name") != target_name]
-        entry["name"] = target_name
+    if is_channel:
+        # Per un canale lineare, aggiorna lo slot primario senza accumulare duplicati
+        grp[:] = [e for e in grp if _clean_base_title(e.get("name", "")).lower() != base_name.lower()]
+        entry["name"] = base_name
     else:
-        num = 1
-        cand_name = _format_target_name(base_name, entry_is_warp, num)
-        while any(e.get("name") == cand_name for e in grp):
-            num += 1
-            cand_name = _format_target_name(base_name, entry_is_warp, num)
-        entry["name"] = cand_name
+        # Per eventi singoli, se c'è già con lo stesso nome esatto, aggiornalo
+        existing = [e for e in grp if e.get("name") == base_name]
+        if existing:
+            grp[:] = [e for e in grp if e.get("name") != base_name]
+            entry["name"] = base_name
+        else:
+            num = 1
+            cand_name = base_name
+            while any(e.get("name") == cand_name for e in grp):
+                num += 1
+                cand_name = f"{base_name} ({num})"
+            entry["name"] = cand_name
 
     grp.append(entry)
     _save(data, profile_id)

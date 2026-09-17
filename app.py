@@ -129,51 +129,6 @@ def _build_mpd_auth(mpd_url: str, dazn_token: str) -> str:
         return f"{proto}://{rest}/@{dazn_token}"
     return mpd_url
 
-def detect_warp_from_stream(url: str = "", title: str = "") -> bool:
-    """Riconosce se uno stream e' Cloudflare WARP (ASN 13335) o Standard."""
-    import base64, json, re
-    url_clean = (url or '').strip().lower()
-    title_clean = (title or '').strip().upper()
-
-    if '.m3u8' in url_clean or ('http' in url_clean and '.mpd' not in url_clean and '@eyj' not in url_clean):
-        return False
-
-    m = re.search(r'[@/=](eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)', url or '')
-    if m:
-        token = m.group(1)
-        try:
-            parts = token.split('.')
-            payload_b64 = parts[1]
-            payload_b64 += '=' * (-len(payload_b64) % 4)
-            payload_json = base64.b64decode(payload_b64).decode('utf-8')
-            payload = json.loads(payload_json)
-            asns = payload.get('asn', [])
-            if isinstance(asns, list):
-                if any(str(a) == '13335' for a in asns):
-                    return True
-                if len(asns) > 0:
-                    return False
-        except Exception:
-            pass
-
-    if '(WARP)' in title_clean:
-        return True
-
-    # Controllo IP
-    import urllib.request
-    for u in ["http://ip-api.com/json/", "https://ipinfo.io/json"]:
-        try:
-            req = urllib.request.Request(u, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=2) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                combined = (str(data.get('as', '')) + ' ' + str(data.get('org', '')) + ' ' + str(data.get('isp', ''))).lower()
-                if 'cloudflare' in combined or 'warp' in combined or 'as13335' in combined:
-                    return True
-                return False
-        except Exception:
-            continue
-    return False
-
 def _format_tile_item(t):
     raw = getattr(t, 'raw', {}) or {}
     sport = raw.get("Sport", {})
@@ -191,6 +146,14 @@ def _format_tile_item(t):
         comp = str(comp)
     else:
         comp = ""
+
+    # Se la competizione non è specificata ed è un canale lineare o live tv
+    ttype = getattr(t, 'tile_type', '') or ''
+    if not comp:
+        if ttype.lower() == 'linear' or 'dazn' in (getattr(t, 'title', '') or '').lower() or 'eurosport' in (getattr(t, 'title', '') or '').lower():
+            comp = "Live TV"
+        elif sport:
+            comp = sport
 
     return {
         "id": t.id,
@@ -551,31 +514,53 @@ def extract_stream():
 
     async def _do_extract():
         nonlocal competition, start, end
-        # Fallback metadata se start/end/competition non passati
+        # Rilevamento automatico se si tratta di canale lineare
+        title_lower = (title or "").strip().lower()
+        is_linear_chan = any(k in title_lower for k in ("dazn 1", "dazn 2", "dazn 3", "dazn 4", "dazn 5", "eurosport", "zona dazn", "milan tv", "inter tv", "juve tv"))
+
+        # Risoluzione metadati e categoria reale se mancante o generica
         if not start or not end or not competition or competition in ("Eventi Live", "Eventi"):
-            try:
-                from dazn_navigator2.services.extractor import _get_http_session
-                client = await _get_http_session()
-                ci_url = f"https://contentitem.discovery.indazn.com/eu/v1/contentitem?Id={asset_id}"
-                r_ci = await client.get(ci_url, timeout=4)
-                if r_ci.status_code == 200:
-                    ci_data = r_ci.json()
-                    item = ci_data.get("ContentItem") or ci_data.get("Event") or ci_data
-                    if not start:
-                        start = item.get("Start") or ""
-                    if not end:
-                        end = item.get("End") or ""
+            if is_linear_chan:
+                competition = "Live TV"
+            else:
+                try:
+                    explorer = DaznExplorer()
+                    s_res = await explorer.search(title)
+                    for match_item in s_res:
+                        raw = getattr(match_item, 'raw', {}) or {}
+                        c_title = ""
+                        comp_raw = raw.get("Competition")
+                        if isinstance(comp_raw, dict):
+                            c_title = comp_raw.get("Title") or ""
+                        elif comp_raw:
+                            c_title = str(comp_raw)
+
+                        if c_title and c_title not in ("Eventi Live", "Eventi"):
+                            competition = c_title
+                            if not start and raw.get("Start"):
+                                start = raw.get("Start")
+                            if not end and raw.get("End"):
+                                end = raw.get("End")
+                            break
+
                     if not competition or competition in ("Eventi Live", "Eventi"):
-                        c = item.get("Competition")
-                        if isinstance(c, dict):
-                            competition = c.get("Title") or competition
-                        elif c:
-                            competition = str(c)
-            except Exception:
-                pass
+                        for match_item in s_res:
+                            raw = getattr(match_item, 'raw', {}) or {}
+                            s_title = ""
+                            sport_raw = raw.get("Sport")
+                            if isinstance(sport_raw, dict):
+                                s_title = sport_raw.get("Title") or ""
+                            elif sport_raw:
+                                s_title = str(sport_raw)
+                            if s_title:
+                                competition = s_title
+                                break
+                    await explorer.close()
+                except Exception:
+                    pass
 
         if not competition:
-            competition = "Eventi"
+            competition = "Live TV" if is_linear_chan else "Eventi"
 
         ext = HeadlessExtractor()
         res = await ext.estrai(target_profile_dir, asset_id, title)
@@ -588,15 +573,8 @@ def extract_stream():
             logo = image or _image_url(res.get("image"))
 
             base_titolo = res.get("titolo") or title
-            is_warp = detect_warp_from_stream(dazn_token or mpd_url, base_titolo)
             import re
-            if is_warp:
-                if "(WARP)" not in base_titolo.upper():
-                    event_name = f"{base_titolo} (WARP)"
-                else:
-                    event_name = base_titolo
-            else:
-                event_name = re.sub(r'\s*\(WARP\)\s*', ' ', base_titolo, flags=re.IGNORECASE).strip()
+            event_name = re.sub(r'\s*\(WARP\)\s*', ' ', base_titolo, flags=re.IGNORECASE).strip()
 
             entry = {
                 "name": event_name,
