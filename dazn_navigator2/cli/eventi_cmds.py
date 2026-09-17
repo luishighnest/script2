@@ -89,12 +89,28 @@ def add_event(comp_title, entry, profile_id=None):
         # Per un canale lineare, aggiorna lo slot primario senza accumulare duplicati
         grp[:] = [e for e in grp if _clean_base_title(e.get("name", "")).lower() != base_name.lower()]
         entry["name"] = base_name
+        grp.append(entry)
     else:
-        # Per eventi singoli, se c'è già con lo stesso nome esatto, aggiornalo
-        existing = [e for e in grp if e.get("name") == base_name]
-        if existing:
-            grp[:] = [e for e in grp if e.get("name") != base_name]
-            entry["name"] = base_name
+        # Per eventi: controlla se c'è un evento dinamico con lo stesso nome
+        # (es. creato automaticamente dal catalogo live con mpd vuoto) o già esistente
+        existing_idx = -1
+        for idx, e in enumerate(grp):
+            if _clean_base_title(e.get("name", "")).lower() == base_name.lower():
+                existing_idx = idx
+                break
+
+        if existing_idx != -1:
+            # Sostituisci o riempi i campi dell'evento esistente
+            old_item = grp[existing_idx]
+            # Conserva immagine o orari se non presenti nel nuovo entry
+            if not entry.get("image") and old_item.get("image"):
+                entry["image"] = old_item["image"]
+            if not entry.get("start") and old_item.get("start"):
+                entry["start"] = old_item["start"]
+            if not entry.get("end") and old_item.get("end"):
+                entry["end"] = old_item["end"]
+            entry["name"] = old_item.get("name") or base_name
+            grp[existing_idx] = entry
         else:
             num = 1
             cand_name = base_name
@@ -102,8 +118,8 @@ def add_event(comp_title, entry, profile_id=None):
                 num += 1
                 cand_name = f"{base_name} ({num})"
             entry["name"] = cand_name
+            grp.append(entry)
 
-    grp.append(entry)
     _save(data, profile_id)
 
 
