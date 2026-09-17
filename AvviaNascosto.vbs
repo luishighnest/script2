@@ -1,10 +1,10 @@
 On Error Resume Next
 
 ' Avvio nascosto Script2 - nessuna finestra visibile
-base = "C:\Users\user\Desktop\script2\"
-py   = "C:\Users\user\AppData\Local\Programs\Python\Python313\python.exe"
-cf   = "C:\Users\user\AppData\Local\Temp\opencode\cloudflared.exe"
-logfile = "C:\Users\user\AppData\Local\Temp\opencode\cf_bat.log"
+base = "C:\Users\alecl\Desktop\script2\"
+py   = "C:\Users\alecl\AppData\Local\Programs\Python\Python313\python.exe"
+cf   = "C:\Users\alecl\AppData\Local\Temp\opencode\cloudflared.exe"
+logfile = "C:\Users\alecl\AppData\Local\Temp\opencode\cf_bat.log"
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")

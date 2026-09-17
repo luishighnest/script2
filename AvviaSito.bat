@@ -5,8 +5,8 @@ title Script2
 
 cd /d "%~dp0"
 
-set PY=C:\Users\user\AppData\Local\Programs\Python\Python313\python.exe
-set CF=C:\Users\user\AppData\Local\Temp\opencode\cloudflared.exe
+set PY=C:\Users\alecl\AppData\Local\Programs\Python\Python313\python.exe
+set CF=C:\Users\alecl\AppData\Local\Temp\opencode\cloudflared.exe
 set CFLOG=%TEMP%\opencode\cf_bat.log
 if exist "%CFLOG%" del "%CFLOG%" >nul 2>&1
 
