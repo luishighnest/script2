@@ -129,6 +129,51 @@ def _build_mpd_auth(mpd_url: str, dazn_token: str) -> str:
         return f"{proto}://{rest}/@{dazn_token}"
     return mpd_url
 
+def detect_warp_from_stream(url: str = "", title: str = "") -> bool:
+    """Riconosce se uno stream e' Cloudflare WARP (ASN 13335) o Standard."""
+    import base64, json, re
+    url_clean = (url or '').strip().lower()
+    title_clean = (title or '').strip().upper()
+
+    if '.m3u8' in url_clean or ('http' in url_clean and '.mpd' not in url_clean and '@eyj' not in url_clean):
+        return False
+
+    m = re.search(r'[@/=](eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)', url or '')
+    if m:
+        token = m.group(1)
+        try:
+            parts = token.split('.')
+            payload_b64 = parts[1]
+            payload_b64 += '=' * (-len(payload_b64) % 4)
+            payload_json = base64.b64decode(payload_b64).decode('utf-8')
+            payload = json.loads(payload_json)
+            asns = payload.get('asn', [])
+            if isinstance(asns, list):
+                if any(str(a) == '13335' for a in asns):
+                    return True
+                if len(asns) > 0:
+                    return False
+        except Exception:
+            pass
+
+    if '(WARP)' in title_clean:
+        return True
+
+    # Controllo IP
+    import urllib.request
+    for u in ["http://ip-api.com/json/", "https://ipinfo.io/json"]:
+        try:
+            req = urllib.request.Request(u, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                combined = (str(data.get('as', '')) + ' ' + str(data.get('org', '')) + ' ' + str(data.get('isp', ''))).lower()
+                if 'cloudflare' in combined or 'warp' in combined or 'as13335' in combined:
+                    return True
+                return False
+        except Exception:
+            continue
+    return False
+
 def _format_tile_item(t):
     raw = getattr(t, 'raw', {}) or {}
     sport = raw.get("Sport", {})
@@ -403,6 +448,24 @@ def get_linear_channels():
         if not tiles:
             tiles = await explorer.get_tiles("LinearChannels")
         items = [_format_tile_item(t) for t in tiles]
+        
+        # Risolvi per ciascun canale il corrispettivo tile 'Live' da search per garantire l'AssetId abilitato
+        for it in items:
+            t_name = it.get("title", "").strip()
+            try:
+                s_res = await explorer.search(t_name)
+                match = [x for x in s_res if x.tile_type == 'Live' and x.title.strip().lower() == t_name.lower()]
+                if match:
+                    it["asset_id"] = match[0].asset_id or match[0].id
+                    if match[0].image:
+                        it["image"] = _image_url(match[0].image)
+                    if match[0].raw.get("Start"):
+                        it["start"] = match[0].raw.get("Start")
+                    if match[0].raw.get("End"):
+                        it["end"] = match[0].raw.get("End")
+            except Exception:
+                pass
+
         await explorer.close()
         return items
 
@@ -524,15 +587,26 @@ def extract_stream():
             ua_str = res.get("ua", "")
             logo = image or _image_url(res.get("image"))
 
+            base_titolo = res.get("titolo") or title
+            is_warp = detect_warp_from_stream(dazn_token or mpd_url, base_titolo)
+            import re
+            if is_warp:
+                if "(WARP)" not in base_titolo.upper():
+                    event_name = f"{base_titolo} (WARP)"
+                else:
+                    event_name = base_titolo
+            else:
+                event_name = re.sub(r'\s*\(WARP\)\s*', ' ', base_titolo, flags=re.IGNORECASE).strip()
+
             entry = {
-                "name": res.get("titolo", title),
+                "name": event_name,
                 "image": logo,
                 "start": start,
                 "end": end,
                 "mpd": mpd_auth,
                 "key": keys_str,
                 "ua": ua_str,
-                # Campi per retrocompatibilità Kodi / m3u / estensione
+                # Campi per retrocompatibilita' Kodi / m3u / estensione
                 "manifest": mpd_auth,
                 "keys": keys_str,
                 "logo": logo,
@@ -541,7 +615,7 @@ def extract_stream():
                 "kodi_url": res.get("kodi_url", "")
             }
             add_event(competition, entry, _current_pid())
-            sync_to_github(f"extract: salvato evento {title} ({_current_pid()})")
+            sync_to_github(f"extract: salvato evento {event_name} ({_current_pid()})")
             res["mpd_url"] = mpd_auth
             res["mpd_auth"] = mpd_auth
             res["entry"] = entry

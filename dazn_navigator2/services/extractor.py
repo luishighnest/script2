@@ -410,20 +410,42 @@ class HeadlessExtractor:
         console.print(f"[dim]  -> 3. Playback API: {time.time() - _t:.2f}s[/dim]")
 
         if not pb_r.get("ok"):
-            err_detail = pb_r.get("error") or pb_r.get("body") or f"HTTP {pb_r.get('status', 'sconosciuto')}"
-            try:
-                err_json = json.loads(pb_r.get("body", "{}"))
-                odata = err_json.get("odata.error", {})
-                code = odata.get("code")
-                msg = odata.get("message", {}).get("value", "")
-                if code == 10803 or "Eligibility" in msg:
-                    err_detail = "Contenuto non incluso nel tuo abbonamento o evento terminato (Eligibility not allowed)."
-                elif msg:
-                    err_detail = f"{msg} (Codice: {code})"
-            except Exception:
-                pass
-            self.result["error"] = f"Playback API: {err_detail}"
-            return self.result
+            # Fallback intelligente per canali lineari / eventi: se l'asset_id EPG fallisce, cerca l'asset_id attivo da search
+            found_fallback = False
+            if titolo:
+                try:
+                    from dazn_navigator2.services.explorer import DaznExplorer
+                    exp = DaznExplorer()
+                    s_res = await exp.search(titolo)
+                    matches = [x for x in s_res if x.tile_type in ('Live', 'Linear') and (x.title.strip().lower() == titolo.strip().lower() or titolo.strip().lower() in x.title.strip().lower())]
+                    if not matches:
+                        matches = [x for x in s_res if x.tile_type in ('Live', 'Linear')]
+                    await exp.close()
+                    if matches and matches[0].asset_id != asset_id:
+                        fallback_aid = matches[0].asset_id
+                        qs_fb = f"AssetId={fallback_aid}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
+                        pb_fb_r = await self._chiama_api(f"{playback_svc}?{qs_fb}", jwt, page=page)
+                        if pb_fb_r.get("ok"):
+                            pb_r = pb_fb_r
+                            found_fallback = True
+                except Exception:
+                    pass
+
+            if not found_fallback:
+                err_detail = pb_r.get("error") or pb_r.get("body") or f"HTTP {pb_r.get('status', 'sconosciuto')}"
+                try:
+                    err_json = json.loads(pb_r.get("body", "{}"))
+                    odata = err_json.get("odata.error", {})
+                    code = odata.get("code")
+                    msg = odata.get("message", {}).get("value", "")
+                    if code == 10803 or "Eligibility" in msg:
+                        err_detail = "Contenuto non incluso nel tuo abbonamento o evento terminato (Eligibility not allowed)."
+                    elif msg:
+                        err_detail = f"{msg} (Codice: {code})"
+                except Exception:
+                    pass
+                self.result["error"] = f"Playback API: {err_detail}"
+                return self.result
 
         pb = json.loads(pb_r["body"])
         pbd = pb.get("PlaybackDetails") or []
