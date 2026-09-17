@@ -28,22 +28,5 @@
          "key": "ee0378dd00145016a7ad860177476aa0:305baa457966f6b8fd83628774b64f22",
          "image": "https://image.discovery.indazn.com/eu/v3/eu/none/bwrys1qjfdj567eezinpez4dt_image-header_pIt_1783426459000/fill/none/top/none/100/1280/720/png/image"
       }
-   ],
-   "Live TV": [
-      {
-         "name": "DAZN 1",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1788259786000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2024-05-23T10:00:00Z",
-         "end": "3000-01-01T00:00:00Z",
-         "mpd": "https://dcs-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk3NTcxMzEsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoyLCJwYXRoIjoiOGViOTUwYjA5YmIxZjMzOTBlZDQ4ODgzN2VhZjk5ODY3MDc2OTRkMSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk2NzA3MzF9.RsOAuOQmuRWAblGSoP2j1wDFlm0PPLl_LvefChgYOHA/dash/dazn-linear-206/stream.mpd?p=web",
-         "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-         "manifest": "https://dcs-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk3NTcxMzEsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoyLCJwYXRoIjoiOGViOTUwYjA5YmIxZjMzOTBlZDQ4ODgzN2VhZjk5ODY3MDc2OTRkMSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk2NzA3MzF9.RsOAuOQmuRWAblGSoP2j1wDFlm0PPLl_LvefChgYOHA/dash/dazn-linear-206/stream.mpd?p=web",
-         "keys": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
-         "logo": "https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1788259786000/fill/none/top/none/100/1280/720/png/image",
-         "license_url": "",
-         "ext_url": "extension://opmeopcambhfimffbomjgemehjkbbmji/pages/player.html#https://dcs-fs-live-dazn-cdn.dazn.com/dash/dazn-linear-206/stream.mpd?p=web&ck=eyI2MTY0YTBhYmFhN2M1M2M2ODc1ZmExZTdmZTBiYjQ2MyI6ICIyNzE1MTBkM2UxMjU5NTcxZGNjNTY4YTIzMmUzOTdlYiJ9&headers=eyJ1c2VyLWFnZW50IjogIk1vemlsbGEvNS4wIChNYWNpbnRvc2g7IEludGVsIE1hYyBPUyBYIDEwXzE1XzcpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS8xMzEuMC4wLjAgU2FmYXJpLzUzNy4zNiIsICJyZWZlcmVyIjogImh0dHBzOi8vd3d3LmRhem4uY29tLyIsICJvcmlnaW4iOiAiaHR0cHM6Ly93d3cuZGF6bi5jb20iLCAiZGF6bi10b2tlbiI6ICJleUpoYkdjaU9pSklVekkxTmlJc0luUjVjQ0k2SWtwWFZDSjkuZXlKbGVIQWlPakUzT0RrM05UY3hNekVzSW10cFpDSTZJakl3TWpJeE1USXpJaXdpY0dGMGFGOWtJam95TENKd1lYUm9Jam9pT0dWaU9UVXdZakE1WW1JeFpqTXpPVEJsWkRRNE9EZ3pOMlZoWmprNU9EWTNNRGMyT1RSa01TSXNJbk56YVdRaU9pSmhNelZrTURCbFl6bGxNak1pTENKd2NtOTBieUk2SW1SaGMyZ2lMQ0puWlc4aU9pSnBkQ0lzSW1GemJpSTZXeUl4TXpNek5TSmRMQ0oxWVNJNklqY3pOR0kyWldGa056VTVZalEzT1dFME1qa3lZV0U1TWpRNU5HTXhNVGMzTWpNMFltUmpZemtpTENKcFlYUWlPakUzT0RrMk56QTNNekY5LlJzT0F1T1FtdVJXQWJsR1NvUDJqMXdERmxtMFBQTGxfTHZlZkNoZ1lPSEEifQ%3D%3D",
-         "kodi_url": "https://dcs-fs-live-dazn-cdn.dazn.com/dash/dazn-linear-206/stream.mpd?p=web&dazn-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk3NTcxMzEsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoyLCJwYXRoIjoiOGViOTUwYjA5YmIxZjMzOTBlZDQ4ODgzN2VhZjk5ODY3MDc2OTRkMSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk2NzA3MzF9.RsOAuOQmuRWAblGSoP2j1wDFlm0PPLl_LvefChgYOHA&ck=eyI2MTY0YTBhYmFhN2M1M2M2ODc1ZmExZTdmZTBiYjQ2MyI6ICIyNzE1MTBkM2UxMjU5NTcxZGNjNTY4YTIzMmUzOTdlYiJ9&headers=eyJ1c2VyLWFnZW50IjogIk1vemlsbGEvNS4wIChNYWNpbnRvc2g7IEludGVsIE1hYyBPUyBYIDEwXzE1XzcpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS8xMzEuMC4wLjAgU2FmYXJpLzUzNy4zNiIsICJyZWZlcmVyIjogImh0dHBzOi8vd3d3LmRhem4uY29tLyIsICJvcmlnaW4iOiAiaHR0cHM6Ly93d3cuZGF6bi5jb20iLCAiZGF6bi10b2tlbiI6ICJleUpoYkdjaU9pSklVekkxTmlJc0luUjVjQ0k2SWtwWFZDSjkuZXlKbGVIQWlPakUzT0RrM05UY3hNekVzSW10cFpDSTZJakl3TWpJeE1USXpJaXdpY0dGMGFGOWtJam95TENKd1lYUm9Jam9pT0dWaU9UVXdZakE1WW1JeFpqTXpPVEJsWkRRNE9EZ3pOMlZoWmprNU9EWTNNRGMyT1RSa01TSXNJbk56YVdRaU9pSmhNelZrTURCbFl6bGxNak1pTENKd2NtOTBieUk2SW1SaGMyZ2lMQ0puWlc4aU9pSnBkQ0lzSW1GemJpSTZXeUl4TXpNek5TSmRMQ0oxWVNJNklqY3pOR0kyWldGa056VTVZalEzT1dFME1qa3lZV0U1TWpRNU5HTXhNVGMzTWpNMFltUmpZemtpTENKcFlYUWlPakUzT0RrMk56QTNNekY5LlJzT0F1T1FtdVJXQWJsR1NvUDJqMXdERmxtMFBQTGxfTHZlZkNoZ1lPSEEifQ%3D%3D"
-      }
    ]
 }
