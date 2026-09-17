@@ -403,7 +403,11 @@ def search_events():
 def diagnose():
     import time as _time
     now = _time.time()
-    results = {}
+    from dazn_navigator2.services.extractor import PROXY_WORKER, _CACHED_SERVICES
+    results = {
+        "_proxy_worker": PROXY_WORKER,
+        "_playback_endpoint": _CACHED_SERVICES.get("Playback", ""),
+    }
     for pid in PROFILES:
         profile_dir = Path(get_active_chrome_profile(pid))
         auth_file = profile_dir / "auth_token.json"

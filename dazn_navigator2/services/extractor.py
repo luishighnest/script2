@@ -50,7 +50,7 @@ DEVICE_ID_FILE = Path(__file__).resolve().parent.parent.parent / "chrome_profile
 # Sessione HTTP globale persistente con connection pooling
 _GLOBAL_SESSION = None
 _DEFAULT_WORKER = "https://script2.redacted.workers.dev"
-PROXY_WORKER = os.environ.get("DAZN_PROXY_WORKER", _DEFAULT_WORKER).rstrip("/")
+PROXY_WORKER = (os.environ.get("DAZN_PROXY_WORKER") or "").strip().rstrip("/") or _DEFAULT_WORKER
 
 _CACHED_SERVICES = {
     "Playback": f"{PROXY_WORKER}/v5/Playback" if PROXY_WORKER else "https://api.playback.indazn.com/v5/Playback",
@@ -380,8 +380,7 @@ class HeadlessExtractor:
         console.print(f"[dim]  -> 1. Get JWT: {time.time() - _t:.2f}s[/dim]")
 
         playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
-
-        # Playback API (country e countryCode impostati esplicitamente a 'it')
+        console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
         qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
         pb_url = f"{playback_svc}?{qs}"
