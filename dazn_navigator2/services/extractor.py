@@ -457,32 +457,48 @@ class HeadlessExtractor:
         self.result["ua"] = ua
         dazn_token = cdn_value if cdn_value else jwt
 
-        # Fetch MPD (con CdnToken in URL + header)
-        _t = time.time()
-        fetch_mpd_url = mpd_url_original
-        if cdn_value:
-            sep = "&" if "?" in fetch_mpd_url else "?"
-            fetch_mpd_url = f"{fetch_mpd_url}{sep}{cdn_name}={cdn_value}"
-
-        # Fetch MPD: la CDN DAZN valida il dazn-token confrontando l'User-Agent.
-        # Evitiamo header UA incoerenti per evitare Forbidden-680 (401).
+        # Itera i PlaybackDetails per trovare la CDN funzionante (evita 401 Forbidden-682 su Akamai)
         client = await _get_http_session()
-        mpd_hdrs = {
-            "origin": "https://www.dazn.com",
-            "referer": "https://www.dazn.com/",
-            "dazn-token": dazn_token,
-            "accept": "*/*"
-        }
-        try:
-            r_mpd_resp = await client.get(fetch_mpd_url, headers=mpd_hdrs, timeout=10)
-            if r_mpd_resp.status_code == 200:
-                mpd_r = {"ok": True, "status": 200, "body": r_mpd_resp.text}
-            else:
-                # Fallback tramite Cloudflare Worker proxy
-                if PROXY_WORKER:
-                    import urllib.parse
-                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(fetch_mpd_url)}"
-                    r_worker = await client.get(worker_mpd, headers=mpd_hdrs, timeout=10)
+        import urllib.parse
+        mpd_r = {"ok": False, "error": "Nessuna CDN valida"}
+        chosen_pbd = None
+        chosen_mpd_url = ""
+        chosen_la_url = ""
+        chosen_token = ""
+        chosen_cdn_name = ""
+        chosen_fetch_url = ""
+
+        _t = time.time()
+        for cand_pbd in pbd:
+            c_mpd = cand_pbd.get("ManifestUrl", "")
+            c_la = cand_pbd.get("LaUrl", "")
+            c_tok_obj = cand_pbd.get("CdnToken", {}) or {}
+            c_name = c_tok_obj.get("Name", "")
+            c_val = c_tok_obj.get("Value", "")
+            c_tok = c_val if c_val else jwt
+
+            if not c_mpd or not c_la:
+                continue
+
+            c_fetch_url = c_mpd
+            if c_val:
+                sep = "&" if "?" in c_fetch_url else "?"
+                c_fetch_url = f"{c_fetch_url}{sep}{c_name}={c_val}"
+
+            c_hdrs = {
+                "origin": "https://www.dazn.com",
+                "referer": "https://www.dazn.com/",
+                "dazn-token": c_tok,
+                "accept": "*/*"
+            }
+
+            try:
+                r_resp = await client.get(c_fetch_url, headers=c_hdrs, timeout=6)
+                if r_resp.status_code == 200:
+                    mpd_r = {"ok": True, "status": 200, "body": r_resp.text}
+                elif PROXY_WORKER:
+                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(c_fetch_url)}"
+                    r_worker = await client.get(worker_mpd, headers=c_hdrs, timeout=6)
                     if r_worker.status_code == 200:
                         mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
                     else:
@@ -495,32 +511,47 @@ class HeadlessExtractor:
                                 return { ok: r.ok, status: r.status, body: await r.text() };
                             } catch(e) { return { ok: false, error: e.message }; }
                         }""",
-                        {"url": fetch_mpd_url, "token": dazn_token}
+                        {"url": c_fetch_url, "token": c_tok}
                     )
                 else:
-                    mpd_r = {"ok": False, "status": r_mpd_resp.status_code, "body": r_mpd_resp.text}
-        except Exception as e:
-            if PROXY_WORKER:
-                try:
-                    import urllib.parse
-                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(fetch_mpd_url)}"
-                    r_worker = await client.get(worker_mpd, headers=mpd_hdrs, timeout=10)
-                    if r_worker.status_code == 200:
-                        mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
-                    else:
-                        mpd_r = {"ok": False, "status": r_worker.status_code, "body": r_worker.text}
-                except Exception as we:
-                    mpd_r = {"ok": False, "error": str(we)}
-            else:
-                mpd_r = {"ok": False, "error": str(e)}
+                    mpd_r = {"ok": False, "status": r_resp.status_code, "body": r_resp.text}
+            except Exception as e:
+                if PROXY_WORKER:
+                    try:
+                        worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(c_fetch_url)}"
+                        r_worker = await client.get(worker_mpd, headers=c_hdrs, timeout=6)
+                        if r_worker.status_code == 200:
+                            mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
+                        else:
+                            mpd_r = {"ok": False, "status": r_worker.status_code, "body": r_worker.text}
+                    except Exception as we:
+                        mpd_r = {"ok": False, "error": str(we)}
+                else:
+                    mpd_r = {"ok": False, "error": str(e)}
+
+            if mpd_r.get("ok"):
+                chosen_pbd = cand_pbd
+                chosen_mpd_url = c_mpd
+                chosen_la_url = c_la
+                chosen_token = c_tok
+                chosen_cdn_name = c_name
+                chosen_fetch_url = c_fetch_url
+                break
 
         console.print(f"[dim]  -> 4. Fetch MPD: {time.time() - _t:.2f}s[/dim]")
 
-        if not mpd_r.get("ok"):
+        if not mpd_r.get("ok") or not chosen_pbd:
             err_detail = mpd_r.get('body', '') or mpd_r.get('error', '')
             self.result["error"] = f"Fetch MPD: {mpd_r.get('status','?')} - Dettaglio server: {err_detail}"
             console.print(f"[bold red]  [Dettaglio Errore MPD][/bold red] Status: {mpd_r.get('status')} | Risposta Server: {err_detail}")
             return self.result
+
+        mpd_url_original = chosen_mpd_url
+        la_url = chosen_la_url
+        dazn_token = chosen_token
+        cdn_name = chosen_cdn_name
+        fetch_mpd_url = chosen_fetch_url
+        self.result["mpd_url"] = mpd_url_original
 
         _t = time.time()
         import xml.etree.ElementTree as ET
