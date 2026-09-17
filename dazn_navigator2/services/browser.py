@@ -35,7 +35,23 @@ class BrowserManager:
         ]
 
         try:
-            # Avvio context persistente con Chromium nativo di Playwright
+            # Avvio context persistente con Edge (msedge): i profili sono creati da Edge,
+            # solo Edge sa decifrare i cookie di sessione DAZN del profilo.
+            self._context = await self._playwright.chromium.launch_persistent_context(
+                user_data_dir=str(p_dir),
+                channel="msedge",
+                headless=True,
+                args=launch_args,
+                viewport={"width": 1280, "height": 720}
+            )
+            pages = self._context.pages
+            self._page = pages[0] if pages else await self._context.new_page()
+            return
+        except Exception as e:
+            print(f"[BrowserManager] msedge fallito ({e}), fallback su Chromium Playwright")
+
+        try:
+            # Fallback: Chromium nativo di Playwright
             self._context = await self._playwright.chromium.launch_persistent_context(
                 user_data_dir=str(p_dir),
                 headless=True,
