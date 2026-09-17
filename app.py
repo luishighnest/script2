@@ -389,6 +389,26 @@ def get_vod_events():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/linear", methods=["GET"])
+def get_linear_channels():
+    if "user_profile_id" not in session:
+        return jsonify({"error": "Non autenticato"}), 401
+
+    async def _fetch():
+        explorer = DaznExplorer()
+        tiles = await explorer.get_tiles("epg")
+        if not tiles:
+            tiles = await explorer.get_tiles("LinearChannels")
+        items = [_format_tile_item(t) for t in tiles]
+        await explorer.close()
+        return items
+
+    try:
+        data = run_async(_fetch(), timeout=45)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/search", methods=["GET"])
 def search_events():
     if "user_profile_id" not in session:

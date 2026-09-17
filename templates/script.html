@@ -377,6 +377,11 @@
                         </button>
                     </li>
                     <li class="nav-item">
+                        <button class="nav-link" id="linear-tab" data-bs-toggle="tab" data-bs-target="#linear-pane" onclick="loadLinear()">
+                            <i class="fa-solid fa-tv me-2"></i>Canali Lineari
+                        </button>
+                    </li>
+                    <li class="nav-item">
                         <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-pane">
                             <i class="fa-solid fa-magnifying-glass me-2"></i>Cerca Evento
                         </button>
@@ -443,7 +448,17 @@
                     </div>
                 </div>
 
-                <!-- PANE 4: CERCA EVENTO -->
+                <!-- PANE 4: CANALI LINEARI -->
+                <div class="tab-pane fade" id="linear-pane">
+                    <div class="row g-2" id="linear-container">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-info" role="status"></div>
+                            <p class="mt-2 text-muted">Caricamento canali lineari (DAZN TV, Eurosport...)...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 5: CERCA EVENTO -->
                 <div class="tab-pane fade" id="search-pane">
                     <div class="card-event p-4 mb-4">
                         <form onsubmit="handleSearch(event)">
@@ -823,6 +838,27 @@ async function deleteEvent(encodedComp, index) {
             }
         }
 
+        async function loadLinear() {
+            const container = document.getElementById('linear-container');
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted">Caricamento canali lineari (DAZN TV, Eurosport...)...</p>
+                </div>
+            `;
+            try {
+                const res = await fetch('/api/linear');
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+                }
+                const tiles = await res.json();
+                renderTileGrid(tiles, container, 'linear');
+            } catch (err) {
+                container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore caricamento Canali Lineari: ${err.message}</div>`;
+            }
+        }
+
         async function handleSearch(e) {
             if (e) e.preventDefault();
             const q = document.getElementById('search-input').value.trim();
@@ -874,6 +910,9 @@ tiles.forEach(t => {
                 if (ttype === 'catchup' || ttype === 'ondemand') {
                     badgeColor = 'bg-primary';
                     badgeText = 'VOD / REPLAY';
+                } else if (ttype === 'linear') {
+                    badgeColor = 'bg-success';
+                    badgeText = 'CANALE TV';
                 } else if (ttype === 'upcoming') {
                     badgeColor = 'bg-warning text-dark';
                     badgeText = 'PROSSIMAMENTE';
