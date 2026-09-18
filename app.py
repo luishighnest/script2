@@ -600,14 +600,7 @@ def extract_stream():
                 "end": end,
                 "mpd": mpd_auth,
                 "key": keys_str,
-                "ua": ua_str,
-                # Campi per retrocompatibilita' Kodi / m3u / estensione
-                "manifest": mpd_auth,
-                "keys": keys_str,
-                "logo": logo,
-                "license_url": res.get("la_url", ""),
-                "ext_url": res.get("ext_url", ""),
-                "kodi_url": res.get("kodi_url", "")
+                "ua": ua_str
             }
             add_event(competition, entry, _current_pid())
             sync_to_github(f"extract: salvato evento {event_name} ({_current_pid()})")
