@@ -108,3 +108,14 @@
 {"logTime": "0917/230140", {"lineNo":0,"logLevel":2,"message":"Log: Migrate_MaybeAfterWorkspacesNotInUse","source":"Workspace Migration","timestamp":"2026-09-17T23:01:40.693Z"}}
 {"logTime": "0917/230140", {"lineNo":0,"logLevel":2,"message":"Log: Checking if fluid can be started...","source":"Workspace Migration","timestamp":"2026-09-17T23:01:40.694Z"}}
 {"logTime": "0917/230140", {"lineNo":0,"logLevel":2,"message":"MaybeOrchestrateMigration: ~MaybeOrchestrateMigration","source":"Workspace Migration","timestamp":"2026-09-17T23:01:40.694Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"MaybeOrchestrateMigration: MaybeOrchestrateMigration","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.113Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Migrate_FeatureCheck: Migrate_FeatureCheck","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.113Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Migrate_FeatureCheck: Migration mode: enabled=true automatic=true manual=false dry_run=false dry_run_version=0 aad=true require_sync=false reset=false force_completion=true ignore_in_use=true timeout_minutes=5 max_retries=3 retry_backoff_hours=1 failure_backoff_hours=1 shared_failures_soft=true stale_failures_soft_days=30 max_soft_failures=-1 dev_ui=false","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.116Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Migrate_FeatureCheck: Migration pref state: completed=false retry_count=9 dry_run_version=0 stampede_time=1.78767e+09 least_dropped=-1 most_dropped=-1","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.119Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Migrate_FeatureCheck: Spacework count: 0","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.119Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Migrate_MaybeHavePrefs: Migrate_MaybeHavePrefs","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.119Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Migrate_Schedule: Migrate_Schedule","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.119Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Log: Migrate_WaitForNotInUse","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.120Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Log: Migrate_MaybeAfterWorkspacesNotInUse","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.120Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"Log: Checking if fluid can be started...","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.120Z"}}
+{"logTime": "0918/172250", {"lineNo":0,"logLevel":2,"message":"MaybeOrchestrateMigration: ~MaybeOrchestrateMigration","source":"Workspace Migration","timestamp":"2026-09-18T17:22:50.121Z"}}
