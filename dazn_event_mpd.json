@@ -9,16 +9,5 @@
          "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
-   ],
-   "LALIGA HYPERMOTION": [
-      {
-         "name": "Albacete - Córdoba",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/hxit09bdhy0u129heqp2lzxu_image-header_pIt_1788881951000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-18T18:30:00Z",
-         "end": "2026-09-18T21:10:00Z",
-         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk4NDg3OTgsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiZTU5Njg5MDA1MzNlYmEyNDUwZDdkMWI2MTQ4MDM3Y2I0YjZhZDlhMyIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk3NjIzOTh9.h_AhnnJWPmsHzYkDd3_7BoLZkrQI9LnuNBwNQoTgTIs/gchw8d9thj2b1osxa98qrzd7k/web/stream.mpd?channel=7004&outlet=dazn-italy&plang=it",
-         "key": "0e2c2f7559735e09b0352924c3263edf:7e6016c6bc55cab0dc3766502c996a58",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      }
    ]
 }
