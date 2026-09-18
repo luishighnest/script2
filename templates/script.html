@@ -755,7 +755,8 @@ if (data.ok) {
                     container.appendChild(col);
                 });
 
-                const fullJson = JSON.stringify(cleanData, null, 3);
+                // Il testo di JSON Completo deve coincidere SEMPRE e al 100% con il file json salvato sul server (es. dazn_event_mpd.json)
+                const fullJson = JSON.stringify(data, null, 3);
                 window.__eventsJson = fullJson;
                 document.getElementById('extracted-json').innerText = fullJson;
             } catch (err) {
