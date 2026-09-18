@@ -36,6 +36,17 @@ def _load(profile_id=None):
 def _save(data, profile_id=None):
     """Scrive il file locale dazn_event.json (per profilo se indicato) e sincronizza istantaneamente su Upstash Redis."""
     target = get_events_file(profile_id)
+    
+    if profile_id == "mpd":
+        allowed = ("name", "image", "start", "end", "mpd", "key", "ua")
+        cleaned_data = {}
+        for cat, items in data.items():
+            if isinstance(items, list):
+                cleaned_data[cat] = [{k: ev.get(k, "") for k in allowed if k in ev} for ev in items]
+            else:
+                cleaned_data[cat] = items
+        data = cleaned_data
+
     target.write_text(json.dumps(data, indent=3, ensure_ascii=False) + "\n", encoding="utf-8")
 
     # Sincronizzazione istantanea su Upstash Redis (latenza zero)
