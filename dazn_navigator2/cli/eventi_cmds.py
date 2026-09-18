@@ -34,9 +34,27 @@ def _load(profile_id=None):
 
 
 def _save(data, profile_id=None):
-    """Scrive il file locale dazn_event.json (per profilo se indicato)."""
+    """Scrive il file locale dazn_event.json (per profilo se indicato) e sincronizza istantaneamente su Upstash Redis."""
     target = get_events_file(profile_id)
     target.write_text(json.dumps(data, indent=3, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    # Sincronizzazione istantanea su Upstash Redis (latenza zero)
+    try:
+        import requests
+        upstash_url = "https://ace-seal-162556.upstash.io"
+        upstash_token = "gQAAAAAAAnr8AAIgcDEyZjRkYjEwYmUzZDY0M2RhYjZkNjhmMDFjNGVkMjVmYw"
+        headers = {"Authorization": f"Bearer {upstash_token}"}
+        payload = json.dumps(data, ensure_ascii=False)
+        
+        # 1. Se il profilo è mpd, sincronizza sulla chiave dedicata stream:eventi_mpd
+        if profile_id == "mpd":
+            requests.post(f"{upstash_url}/set/stream:eventi_mpd", headers=headers, data=payload, timeout=4)
+        
+        # 2. Sincronizza anche per profilo stream:eventi_{profile_id}
+        if profile_id:
+            requests.post(f"{upstash_url}/set/stream:eventi_{profile_id}", headers=headers, data=payload, timeout=4)
+    except Exception:
+        pass
 
 
 def pubblica(messaggio=""):
