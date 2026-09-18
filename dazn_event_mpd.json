@@ -20,16 +20,5 @@
          "key": "ffbdc83400285c4a996a77a928c6313d:8416512b8b730968c37502bc722a9f79",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
-   ],
-   "Serie BKT": [
-      {
-         "name": "Juve Stabia - Cesena",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/2e93i2rzpvcci9u12zuq5dn0j_image-header_pIt_1786354633000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-18T18:30:00Z",
-         "end": "2026-09-18T21:00:00Z",
-         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk4NDc2OTUsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiZjg1YWEwZGVlMzlhNTRlNGE4Yjg4MTBkMDM2ZDU4NDhiZTBhYjg4YyIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk3NjEyOTV9.Ie3x7UpMwORndxxrz0VTPYHFuWQg7y-i4XFhLFJ1q0I/jxcpry40eg631ob1k8hve7zt7/web/stream.mpd?channel=3946&outlet=dazn-italy&plang=it",
-         "key": "54941d6702da5f56b4e8381ede9336fc:192196c9c33d218dca09c53c58246f9b",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      }
    ]
 }

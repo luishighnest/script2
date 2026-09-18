@@ -1,3 +1,6 @@
-2026/09/18-19:23:08.717 b2c Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/09/18-19:23:54.452 b2c Recovering log #32
-2026/09/18-19:23:59.345 b2c Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\EdgeCoupons/coupons_data.db/000032.log 
+2026/09/18-21:31:04.980 1370 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/09/18-21:31:04.984 1370 Recovering log #32
+2026/09/18-21:31:04.990 1370 Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\EdgeCoupons/coupons_data.db/000032.log 
+2026/09/18-21:31:08.984 2974 Level-0 table #37: started
+2026/09/18-21:31:08.998 2974 Level-0 table #37: 683376 bytes OK
+2026/09/18-21:31:09.002 2974 Delete type=0 #32
