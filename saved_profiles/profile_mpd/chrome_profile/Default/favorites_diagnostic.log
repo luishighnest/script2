@@ -1,0 +1,120 @@
+2026-08-25 11:11:30.164: [INFO] CurrentProfilePath: D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default
+2026-08-25 11:11:30.164: [INFO] Profiles total count: 1
+2026-08-25 11:11:30.164: [INFO] Profile: name=Profilo 1 path=D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default lastActive=null
+2026-08-25 11:11:30.164: [INFO] LastUsedProfileDir: D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default
+2026-08-25 11:11:30.164: [INFO] VisibilityChanged: 0
+2026-08-25 11:11:30.201: [INFO] OnDoneLoading sync enabled: 0
+2026-08-25 11:11:30.201: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-25 11:11:30.201: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-25 11:11:30.201: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-25 11:12:38.643: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-25 11:12:57.620: [INFO] CurrentProfilePath: D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default
+2026-08-25 11:12:57.620: [INFO] Profiles total count: 1
+2026-08-25 11:12:57.621: [INFO] Profile: name=Profilo 1 path=D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default lastActive=2026-08-25T11:12:33.271Z
+2026-08-25 11:12:57.621: [INFO] LastUsedProfileDir: D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default
+2026-08-25 11:12:57.621: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=D:\JOBS\DAZN\DAZN-Navigator2\chrome_profile\Default lastActive=2026-08-25T11:12:33.271Z
+2026-08-25 11:12:57.621: [INFO] VisibilityChanged: 0
+2026-08-25 11:12:57.638: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.639: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.639: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.640: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.640: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.641: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.641: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.642: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.642: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.643: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:57.652: [INFO] OnDoneLoading sync enabled: 0
+2026-08-25 11:12:57.652: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-25 11:12:57.652: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-25 11:12:57.652: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-25 11:12:57.688: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:58.440: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:58.442: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:58.446: [INFO] Primary account changed.
+2026-08-25 11:12:58.446: [INFO] OnPrimaryAccountChanged PrimaryAccountChangeEvent::Type::kSet
+2026-08-25 11:12:58.450: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-25 11:12:58.451: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-26 17:57:42.290: [INFO] CurrentProfilePath: D:\JOBS\Alessandro\dazn10\chrome_profile\Default
+2026-08-26 17:57:42.290: [INFO] Profiles total count: 1
+2026-08-26 17:57:42.291: [INFO] Profile: name=Personale path=D:\JOBS\Alessandro\dazn10\chrome_profile\Default lastActive=2026-08-25T11:12:57.637Z
+2026-08-26 17:57:42.291: [INFO] LastUsedProfileDir: D:\JOBS\Alessandro\dazn10\chrome_profile\Default
+2026-08-26 17:57:42.291: [INFO] MostRecentlyActiveProfile: name=Personale path=D:\JOBS\Alessandro\dazn10\chrome_profile\Default lastActive=2026-08-25T11:12:57.637Z
+2026-08-26 17:57:42.291: [INFO] VisibilityChanged: 0
+2026-08-26 17:57:42.316: [INFO] OnDoneLoading sync enabled: 0
+2026-08-26 17:57:42.316: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-26 17:57:42.316: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-26 17:57:42.316: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-28 18:29:34.951: [INFO] CurrentProfilePath: D:\VPS\dazn10\chrome_profile\Default
+2026-08-28 18:29:34.951: [INFO] Profiles total count: 1
+2026-08-28 18:29:34.952: [INFO] Profile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-08-26T17:57:42.309Z
+2026-08-28 18:29:34.952: [INFO] LastUsedProfileDir: D:\VPS\dazn10\chrome_profile\Default
+2026-08-28 18:29:34.952: [INFO] MostRecentlyActiveProfile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-08-26T17:57:42.309Z
+2026-08-28 18:29:34.952: [INFO] VisibilityChanged: 0
+2026-08-28 18:29:35.007: [INFO] OnDoneLoading sync enabled: 0
+2026-08-28 18:29:35.007: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-28 18:29:35.007: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-28 18:29:35.007: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-12 13:26:01.949: [INFO] CurrentProfilePath: D:\VPS\dazn10\chrome_profile\Default
+2026-09-12 13:26:01.949: [INFO] Profiles total count: 1
+2026-09-12 13:26:01.949: [INFO] Profile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-08-28T18:29:34.994Z
+2026-09-12 13:26:01.949: [INFO] LastUsedProfileDir: D:\VPS\dazn10\chrome_profile\Default
+2026-09-12 13:26:01.949: [INFO] MostRecentlyActiveProfile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-08-28T18:29:34.994Z
+2026-09-12 13:26:01.949: [INFO] VisibilityChanged: 0
+2026-09-12 13:26:01.992: [INFO] OnDoneLoading sync enabled: 0
+2026-09-12 13:26:01.992: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-12 13:26:01.992: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-12 13:26:01.992: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-13 13:02:54.877: [INFO] CurrentProfilePath: D:\VPS\dazn10\chrome_profile\Default
+2026-09-13 13:02:54.877: [INFO] Profiles total count: 1
+2026-09-13 13:02:54.878: [INFO] Profile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-09-12T13:26:01.971Z
+2026-09-13 13:02:54.878: [INFO] LastUsedProfileDir: D:\VPS\dazn10\chrome_profile\Default
+2026-09-13 13:02:54.878: [INFO] MostRecentlyActiveProfile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-09-12T13:26:01.971Z
+2026-09-13 13:02:54.878: [INFO] VisibilityChanged: 0
+2026-09-13 13:02:54.909: [INFO] OnDoneLoading sync enabled: 0
+2026-09-13 13:02:54.909: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-13 13:02:54.909: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-13 13:02:54.909: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-14 13:54:42.816: [INFO] CurrentProfilePath: D:\VPS\dazn10\chrome_profile\Default
+2026-09-14 13:54:42.816: [INFO] Profiles total count: 1
+2026-09-14 13:54:42.817: [INFO] Profile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-09-13T13:02:54.896Z
+2026-09-14 13:54:42.817: [INFO] LastUsedProfileDir: D:\VPS\dazn10\chrome_profile\Default
+2026-09-14 13:54:42.817: [INFO] MostRecentlyActiveProfile: name=Personale path=D:\VPS\dazn10\chrome_profile\Default lastActive=2026-09-13T13:02:54.896Z
+2026-09-14 13:54:42.817: [INFO] VisibilityChanged: 0
+2026-09-14 13:54:42.862: [INFO] OnDoneLoading sync enabled: 0
+2026-09-14 13:54:42.862: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-14 13:54:42.862: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-14 13:54:42.862: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-17 18:38:51.298: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-17 18:38:51.298: [INFO] Profiles total count: 1
+2026-09-17 18:38:51.300: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-14T13:54:42.837Z
+2026-09-17 18:38:51.300: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-17 18:38:51.300: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-14T13:54:42.837Z
+2026-09-17 18:38:51.300: [INFO] VisibilityChanged: 0
+2026-09-17 18:38:51.390: [INFO] OnDoneLoading sync enabled: 0
+2026-09-17 18:38:51.390: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-17 18:38:51.390: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-17 18:38:51.390: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-17 19:04:24.966: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-17 20:48:00.631: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-17 20:48:00.631: [INFO] Profiles total count: 1
+2026-09-17 20:48:00.632: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-17T18:38:51.342Z
+2026-09-17 20:48:00.632: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-17 20:48:00.632: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-17T18:38:51.342Z
+2026-09-17 20:48:00.632: [INFO] VisibilityChanged: 0
+2026-09-17 20:48:00.753: [INFO] OnDoneLoading sync enabled: 0
+2026-09-17 20:48:00.753: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-17 20:48:00.753: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-17 20:48:00.753: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-17 21:18:42.262: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-17 23:01:33.395: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-17 23:01:33.395: [INFO] Profiles total count: 1
+2026-09-17 23:01:33.397: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-17T20:48:00.693Z
+2026-09-17 23:01:33.397: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-17 23:01:33.397: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-17T20:48:00.693Z
+2026-09-17 23:01:33.397: [INFO] VisibilityChanged: 0
+2026-09-17 23:01:33.505: [INFO] OnDoneLoading sync enabled: 0
+2026-09-17 23:01:33.505: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-17 23:01:33.505: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-17 23:01:33.505: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-18 08:08:23.926: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1

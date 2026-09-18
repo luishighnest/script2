@@ -1,0 +1,15 @@
+2026/09/18-01:01:59.508 4190 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/09/18-01:01:59.689 4190 Recovering log #29
+2026/09/18-01:01:59.721 4190 Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\EdgeCoupons/coupons_data.db/000029.log 
+2026/09/18-01:02:15.622 2fb8 Level-0 table #33: started
+2026/09/18-01:02:15.681 2fb8 Level-0 table #33: 683376 bytes OK
+2026/09/18-01:02:15.691 2fb8 Delete type=0 #29
+2026/09/18-01:02:15.695 2fb8 Compacting 4@0 + 1@1 files
+2026/09/18-01:02:15.755 2fb8 Generated table #34@0: 4 keys, 683815 bytes
+2026/09/18-01:02:15.755 2fb8 Compacted 4@0 + 1@1 files => 683815 bytes
+2026/09/18-01:02:15.757 2fb8 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/09/18-01:02:15.777 2fb8 Delete type=2 #21
+2026/09/18-01:02:15.777 2fb8 Delete type=2 #24
+2026/09/18-01:02:15.778 2fb8 Delete type=2 #27
+2026/09/18-01:02:15.779 2fb8 Delete type=2 #30
+2026/09/18-01:02:15.779 2fb8 Delete type=2 #33
