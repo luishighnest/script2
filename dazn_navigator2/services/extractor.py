@@ -153,20 +153,22 @@ class HeadlessExtractor:
                 return None
             return pl
 
-        # 1. Controlla prima il file dedicato auth_token.json
-        auth_file = p / "auth_token.json"
-        if auth_file.exists():
-            try:
-                data = json.loads(auth_file.read_text(encoding="utf-8"))
-                tok = data.get("jwt")
-                if tok and tok.startswith("eyJ") and _it_valid(tok):
-                    return tok
-            except Exception:
-                pass
+        # 1. Controlla prima il file dedicato auth_token.json (anche se annidato in chrome_profile)
+        possible_auth_files = [p / "auth_token.json", p / "chrome_profile" / "auth_token.json"]
+        for auth_file in possible_auth_files:
+            if auth_file.exists():
+                try:
+                    data = json.loads(auth_file.read_text(encoding="utf-8"))
+                    tok = data.get("jwt")
+                    if tok and tok.startswith("eyJ") and _it_valid(tok):
+                        return tok
+                except Exception:
+                    pass
 
         # 2. Fallback: LevelDB del browser (solo token country == 'it')
         leveldb_dirs = [
             p / "Default" / "Local Storage" / "leveldb",
+            p / "chrome_profile" / "Default" / "Local Storage" / "leveldb",
             p / "Local Storage" / "leveldb",
             p / "leveldb"
         ]

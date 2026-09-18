@@ -173,15 +173,23 @@ def _format_tile_item(t):
         "end": raw.get("End") or "",
     }
 
+def _resolve_profile_dir(path_str):
+    if not path_str:
+        return None
+    # Supporta sia separatori Windows che Linux
+    clean_p = str(path_str).replace("\\", "/")
+    p_obj = Path(clean_p)
+    if not p_obj.is_absolute():
+        p_obj = BASE_DIR / p_obj
+    return p_obj
+
 def get_active_chrome_profile(profile_id):
     cfg = load_profiles_config()
     p = cfg.get(profile_id, {}).get("chrome_profile_path")
     if p:
-        path_obj = Path(p)
-        if not path_obj.is_absolute():
-            path_obj = BASE_DIR / path_obj
-        if path_obj.exists():
-            return str(path_obj)
+        p_obj = _resolve_profile_dir(p)
+        if p_obj and p_obj.exists():
+            return str(p_obj)
     # Fallback predefinito alla cartella salvata per id
     fallback_dir = UPLOAD_PROFILES_DIR / f"profile_{profile_id}"
     if fallback_dir.exists():
@@ -224,15 +232,14 @@ def script_page():
     
     has_folder = False
     if saved_path:
-        p_obj = Path(saved_path)
-        if not p_obj.is_absolute():
-            p_obj = BASE_DIR / p_obj
-        has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj.exists() else False
-    else:
+        p_obj = _resolve_profile_dir(saved_path)
+        has_folder = p_obj.exists() and any(p_obj.iterdir()) if p_obj and p_obj.exists() else False
+    
+    if not has_folder:
         fallback_dir = UPLOAD_PROFILES_DIR / f"profile_{pid}"
         if fallback_dir.exists() and any(fallback_dir.iterdir()):
             has_folder = True
-            saved_path = str(fallback_dir.relative_to(BASE_DIR))
+            saved_path = str(fallback_dir.relative_to(BASE_DIR)).replace("\\", "/")
 
     return render_template(
         "script.html",
