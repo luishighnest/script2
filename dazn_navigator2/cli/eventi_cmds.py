@@ -61,64 +61,120 @@ def _clean_base_title(name: str) -> str:
     import re
     cleaned = re.sub(r'\s*\(WARP\)\s*', ' ', name, flags=re.IGNORECASE)
     cleaned = re.sub(r'\s*\(\d+\)\s*', ' ', cleaned)
-    cleaned = re.sub(r'\s+\d+\s*$', '', cleaned)
+    # Rimuovi numero finale solo se NON è un canale lineare noto con numerazione ufficiale (es. DAZN, Eurosport, Sky Sport)
+    upper_c = cleaned.upper().strip()
+    is_numbered_channel = any(upper_c.startswith(k) or upper_c == k for k in ("DAZN", "EUROSPORT", "SKY SPORT"))
+    if not is_numbered_channel:
+        cleaned = re.sub(r'\s+\d+\s*$', '', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    # Normalizzazione nomi lineari
+    if cleaned.upper() == "DAZN":
+        cleaned = "DAZN 1"
+    elif cleaned.upper() == "EUROSPORT":
+        cleaned = "Eurosport 1"
     return cleaned
 
 
+def _normalize_match_key(s: str) -> str:
+    import re
+    import unicodedata
+    if not s:
+        return ""
+    # 1. Rimuove COMPLETAMENTE qualsiasi cosa tra parentesi (e il loro contenuto)
+    s = re.sub(r'[\(\[\{].*?[\)\]\}]', ' ', s)
+    s = s.replace('\ufffd', ' ')
+    s = unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('utf-8')
+    s = s.lower()
+    s = re.sub(r'[^a-z0-9\s]', ' ', s)
+    s = re.sub(r'\b(vs|v|contro|de|di|el|la|los|las|il|lo|le|i|gli|the|fc|cf|ac|as|calcio|club)\b', ' ', s)
+    repl = {'barcellona': 'barcelona', 'siviglia': 'sevilla', 'atletico': 'atletico', 'monaco': 'munich', 'bayern': 'bayern'}
+    words = re.findall(r'\b[a-z0-9]{3,}\b', s)
+    norm_words = sorted(set(repl.get(w, w) for w in words))
+    return ' '.join(norm_words)
+
+
+def _match_event_keys(k1: str, k2: str) -> bool:
+    if not k1 or not k2:
+        return False
+    if k1 == k2:
+        return True
+    s1 = set(k1.split())
+    s2 = set(k2.split())
+    inter = s1.intersection(s2)
+    return len(inter) >= 2 or (len(inter) >= 1 and (len(s1) <= 2 or len(s2) <= 2))
+
+
 def add_event(comp_title, entry, profile_id=None):
-    """Aggiunge o aggiorna un evento nella lista per competizione."""
+    """Aggiunge o aggiorna un evento nella lista ignorando totalmente qualsiasi parentesi."""
     data = _load(profile_id)
-    comp_title = comp_title or "Eventi"
-    grp = data.setdefault(comp_title, [])
     entry_url = entry.get("mpd") or entry.get("url") or ""
     entry_name = entry.get("name", "")
 
     base_name = _clean_base_title(entry_name)
+    entry_norm_key = _normalize_match_key(entry_name)
 
-    # 1. Se esiste già lo stesso URL identico, rimuovilo (verrà riaggiunto aggiornato)
+    # 1. Cerca prima se esiste una scheda vuota (nella categoria o ovunque)
+    found_cat = None
+    found_idx = -1
+
+    if comp_title and comp_title in data:
+        for idx, e in enumerate(data[comp_title]):
+            if not (e.get("mpd") or e.get("url")):
+                b_key = _normalize_match_key(e.get("name", ""))
+                if _match_event_keys(entry_norm_key, b_key):
+                    found_cat = comp_title
+                    found_idx = idx
+                    break
+
+    if found_idx == -1:
+        for cat, items in data.items():
+            for idx, e in enumerate(items):
+                if not (e.get("mpd") or e.get("url")):
+                    b_key = _normalize_match_key(e.get("name", ""))
+                    if _match_event_keys(entry_norm_key, b_key):
+                        found_cat = cat
+                        found_idx = idx
+                        break
+            if found_idx != -1:
+                break
+
+    if found_idx != -1 and found_cat:
+        target_list = data[found_cat]
+        old_item = target_list[found_idx]
+        if not entry.get("image") and old_item.get("image"):
+            entry["image"] = old_item["image"]
+        if not entry.get("start") and old_item.get("start"):
+            entry["start"] = old_item["start"]
+        if not entry.get("end") and old_item.get("end"):
+            entry["end"] = old_item["end"]
+        entry["name"] = old_item.get("name") or base_name
+        target_list[found_idx] = entry
+        _save(data, profile_id)
+        return
+
+    # 2. Inserimento normale
+    comp_title = comp_title or "Eventi"
+    grp = data.setdefault(comp_title, [])
+
     if entry_url:
         grp[:] = [e for e in grp if (e.get("mpd") or e.get("url")) != entry_url]
 
-    # 2. Gestione canali lineari (DAZN, Eurosport, ecc.) o eventi:
     is_channel = (entry.get("end", "").startswith("3000") or 
                   comp_title.lower() in ("canali lineari", "live tv") or 
                   any(k in base_name.lower() for k in ("dazn", "eurosport", "milan tv", "inter tv")))
 
     if is_channel:
-        # Per un canale lineare, aggiorna lo slot primario senza accumulare duplicati
         grp[:] = [e for e in grp if _clean_base_title(e.get("name", "")).lower() != base_name.lower()]
         entry["name"] = base_name
         grp.append(entry)
     else:
-        # Per eventi: controlla se c'è un evento dinamico con lo stesso nome
-        # (es. creato automaticamente dal catalogo live con mpd vuoto) o già esistente
-        existing_idx = -1
-        for idx, e in enumerate(grp):
-            if _clean_base_title(e.get("name", "")).lower() == base_name.lower():
-                existing_idx = idx
-                break
-
-        if existing_idx != -1:
-            # Sostituisci o riempi i campi dell'evento esistente
-            old_item = grp[existing_idx]
-            # Conserva immagine o orari se non presenti nel nuovo entry
-            if not entry.get("image") and old_item.get("image"):
-                entry["image"] = old_item["image"]
-            if not entry.get("start") and old_item.get("start"):
-                entry["start"] = old_item["start"]
-            if not entry.get("end") and old_item.get("end"):
-                entry["end"] = old_item["end"]
-            entry["name"] = old_item.get("name") or base_name
-            grp[existing_idx] = entry
-        else:
-            num = 1
-            cand_name = base_name
-            while any(e.get("name") == cand_name for e in grp):
-                num += 1
-                cand_name = f"{base_name} ({num})"
-            entry["name"] = cand_name
-            grp.append(entry)
+        num = 1
+        cand_name = base_name
+        while any(e.get("name") == cand_name for e in grp):
+            num += 1
+            cand_name = f"{base_name} ({num})"
+        entry["name"] = cand_name
+        grp.append(entry)
 
     _save(data, profile_id)
 

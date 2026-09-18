@@ -155,10 +155,16 @@ def _format_tile_item(t):
         elif sport:
             comp = sport
 
+    title_str = getattr(t, 'title', '') or ''
+    if title_str.strip().upper() == "DAZN":
+        title_str = "DAZN 1"
+    elif title_str.strip().upper() == "EUROSPORT":
+        title_str = "Eurosport 1"
+
     return {
         "id": t.id,
         "asset_id": getattr(t, 'asset_id', None) or t.id,
-        "title": t.title,
+        "title": title_str,
         "sport": sport,
         "competition": comp or "Eventi",
         "image": _image_url(t.image),
@@ -575,6 +581,10 @@ def extract_stream():
             base_titolo = res.get("titolo") or title
             import re
             event_name = re.sub(r'\s*\(WARP\)\s*', ' ', base_titolo, flags=re.IGNORECASE).strip()
+            if event_name.strip().upper() == "DAZN":
+                event_name = "DAZN 1"
+            elif event_name.strip().upper() == "EUROSPORT":
+                event_name = "Eurosport 1"
 
             entry = {
                 "name": event_name,
