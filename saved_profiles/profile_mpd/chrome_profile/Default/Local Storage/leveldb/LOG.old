@@ -1,3 +1,6 @@
-2026/09/17-22:48:02.879 176c Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/09/17-22:48:03.106 176c Recovering log #35
-2026/09/17-22:48:03.261 176c Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Local Storage\leveldb/000035.log 
+2026/09/18-01:01:34.098 1b40 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/09/18-01:01:35.022 1b40 Recovering log #35
+2026/09/18-01:01:35.203 1b40 Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Local Storage\leveldb/000035.log 
+2026/09/18-01:02:35.494 19a0 Level-0 table #40: started
+2026/09/18-01:02:35.543 19a0 Level-0 table #40: 27934 bytes OK
+2026/09/18-01:02:35.555 19a0 Delete type=0 #35
