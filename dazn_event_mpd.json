@@ -19,6 +19,15 @@
          "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk4NDg5NTMsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMTEyOWJkMWE1NjU2Y2EzOTY3ODZiYTQzYzAzNjQyZDc4NzY3YWFhZSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk3NjI1NTN9.xRjLuWMI1Db7UmZwhHFHpvBJyjW-cFd5nWXrwGCq468/12t9jee7016gu11ozv3cm3mi6l/web/stream.mpd?channel=1638&outlet=dazn-italy&plang=it",
          "key": "ffbdc83400285c4a996a77a928c6313d:8416512b8b730968c37502bc722a9f79",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      },
+      {
+         "name": "Fantacalcio Night | Monza - Sassuolo (2)",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/e5o58r6krzuk0zygtuil8okjf_image-header_pIt_1782214531000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-18T16:57:00Z",
+         "end": "2026-09-18T23:15:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk4NDkxNzgsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMTEyOWJkMWE1NjU2Y2EzOTY3ODZiYTQzYzAzNjQyZDc4NzY3YWFhZSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk3NjI3Nzh9.xdaeKzCN7VgW1SLAC_oPDA4HLLbHMemhLpnx9y1O7xM/12t9jee7016gu11ozv3cm3mi6l/web/stream.mpd?channel=1638&outlet=dazn-italy&plang=it",
+         "key": "ffbdc83400285c4a996a77a928c6313d:8416512b8b730968c37502bc722a9f79",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ]
 }
