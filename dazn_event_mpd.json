@@ -79,6 +79,15 @@
          "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDg0ODYsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMjkzMDU1NTQ0ZDMzNDNmM2E2OWUxZWU0ZmZiNThkYWJmNzI1ZGRkNCIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MjIwODZ9.36QSafZMcS-I3521VsIDBusXmXdPuGOxt7_u2BDd1kI/13lfz8xn0qm5c17o215qeqpy8x/web/stream.mpd?channel=3952&outlet=dazn-italy&plang=it",
          "key": "97a252e48e335e37ad0819ce00c59392:bc5e2fe4c95a50c6bd7ce32e5ece1775",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      },
+      {
+         "name": "Cremonese - Virtus Entella",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/3kx59jmbu4clgnhcls0l7e5mt_image-header_pIt_1786358939000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T13:00:00Z",
+         "end": "2026-09-19T15:30:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDg0OTUsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMjRkM2UyZmUzMTdkOWZjZTc4YTZhOTYyYTc3MTQ2OGNjMDY0NjZlZiIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MjIwOTV9.HqZ60SZ0P3J-h-tv5rwIht9v7m2XDEgCM9S5hMjgU8o/hvh6whn33n3m1lz8sd86ax8o9/web/stream.mpd?channel=3929&outlet=dazn-italy&plang=it",
+         "key": "84e537429adf5e0fafdc432f7a7609e9:2f77dd6f8a70f17f84a423452f42976f",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ]
 }
