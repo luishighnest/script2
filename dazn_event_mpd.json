@@ -97,6 +97,15 @@
          "mpd": "https://dcb-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDg1MDUsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiZjUwMGFhN2FjMmY5ZTYzZjE0OGE4OGRjOGQzMTQ2NWFjNTg3ZDY4NCIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MjIxMDV9.-2NuzOoo4JzJZJVI7aZRZd3-uyxA2qlmmVBephr7_JA/83ncfm9n2p161pd46pe8ldeyp/web/stream.mpd?channel=3946&outlet=dazn-italy&plang=it",
          "key": "d82bf2a554dd55209d4bab704869b15b:caa7bf121eb188fb3b6d0b050cc03e4b",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      },
+      {
+         "name": "Zona Serie BKT",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/6oz8u6u5n5g14142iw3k8rsv1_image-header_pIt_1756216170000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T13:00:00Z",
+         "end": "2026-09-19T16:45:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDg3MjksImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiYjE0YzQzYzlmOTkxMDE2NDM4NWU2NTA1ZjRmMTczNDdjZjEzMTUyYSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MjIzMjl9.n0-6AQCAs3fcuL83i8zboNFHjyJbS6gUq9nRdJPjSdI/8v6w3lkq0nkj1t6wqoc7u5meg/web/stream.mpd?channel=3943&outlet=dazn-italy&plang=it",
+         "key": "90a9312f19505f0897a4e72739521b26:40570d198247179993c65b95db5a8f9c",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ]
 }
