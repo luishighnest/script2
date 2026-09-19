@@ -635,6 +635,146 @@ def generate_m3u():
     
     return Response("\n".join(lines), mimetype="audio/x-mpegurl")
 
+def _auto_extract_worker():
+    """Scansiona e estrae automaticamente e istantaneamente tutti gli eventi Live delle competizioni target."""
+    import time
+    from datetime import datetime, timezone
+    
+    TARGET_COMPETITIONS = {
+        "serie a enilive",
+        "serie bkt",
+        "laliga ea sports"
+    }
+    
+    time.sleep(5)  # Attende l'avvio completo del server
+    print("[AutoExtract] Servizio estrazione automatica competizioni attivo (Serie A, Serie B, LaLiga).")
+    
+    while True:
+        try:
+            async def _check_and_extract():
+                pid = "mpd"  # Salva direttamente nel profilo mpd (sincronizzato con stream:eventi_mpd)
+                target_profile_dir = get_active_chrome_profile(pid)
+                if not target_profile_dir:
+                    return
+                
+                # Leggi eventi gia' estratti
+                current_data = _load(pid)
+                extracted_names = set()
+                for comp, ev_list in current_data.items():
+                    for ev in ev_list:
+                        n = (ev.get("name") or "").strip().lower()
+                        if n and (ev.get("mpd") or ev.get("manifest")):
+                            extracted_names.add(n)
+                
+                explorer = DaznExplorer()
+                # Cerca contenuti live
+                tiles = []
+                for query in ("Serie A", "Serie B", "LaLiga", "Live"):
+                    try:
+                        res = await explorer.search(query)
+                        tiles.extend(res)
+                    except Exception:
+                        pass
+                
+                now = datetime.now(timezone.utc)
+                candidates = []
+                seen_assets = set()
+                
+                for t in tiles:
+                    asset_id = t.asset_id or t.id
+                    if not asset_id or asset_id in seen_assets:
+                        continue
+                    seen_assets.add(asset_id)
+                    
+                    raw = getattr(t, "raw", {}) or {}
+                    comp_raw = raw.get("Competition", {})
+                    c_title = comp_raw.get("Title") if isinstance(comp_raw, dict) else str(comp_raw or "")
+                    c_title_clean = c_title.strip().lower()
+                    
+                    if c_title_clean not in TARGET_COMPETITIONS:
+                        continue
+                    
+                    # Controlla se e' in corso / live
+                    start_str = raw.get("Start") or ""
+                    end_str = raw.get("End") or ""
+                    is_live = False
+                    
+                    if t.tile_type == "Live":
+                        is_live = True
+                    elif start_str:
+                        try:
+                            st_dt = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                            if end_str:
+                                en_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+                                is_live = (st_dt <= now <= en_dt)
+                            else:
+                                # Se iniziato da meno di 3 ore
+                                is_live = (st_dt <= now and (now - st_dt).total_seconds() < 10800)
+                        except Exception:
+                            pass
+                    
+                    if not is_live:
+                        continue
+                    
+                    # Verifica se e' gia' stato estratto
+                    ev_title = t.title.strip()
+                    import re
+                    clean_title = re.sub(r'\s*\(WARP\)\s*', ' ', ev_title, flags=re.IGNORECASE).strip()
+                    if clean_title.lower() in extracted_names:
+                        continue
+                    
+                    candidates.append({
+                        "asset_id": asset_id,
+                        "title": clean_title,
+                        "competition": c_title,
+                        "image": _image_url(t.image),
+                        "start": start_str,
+                        "end": end_str
+                    })
+                
+                await explorer.close()
+                
+                # Estrai ciascun evento mancante
+                for cand in candidates:
+                    print(f"[AutoExtract] Rilevato evento LIVE da estrarre: {cand['title']} ({cand['competition']})")
+                    try:
+                        ext = HeadlessExtractor()
+                        res = await ext.estrai(target_profile_dir, cand["asset_id"], cand["title"])
+                        if res.get("ok"):
+                            mpd_url = res.get("mpd_url", "")
+                            dazn_token = res.get("dazn_token", "")
+                            mpd_auth = _build_mpd_auth(mpd_url, dazn_token)
+                            keys_str = ",".join(res.get("keys", []))
+                            ua_str = res.get("ua", "")
+                            logo = cand["image"] or _image_url(res.get("image"))
+                            
+                            entry = {
+                                "name": cand["title"],
+                                "image": logo,
+                                "start": cand["start"],
+                                "end": cand["end"],
+                                "mpd": mpd_auth,
+                                "key": keys_str,
+                                "ua": ua_str
+                            }
+                            add_event(cand["competition"], entry, pid)
+                            sync_to_github(f"auto-extract: {cand['title']} ({cand['competition']})")
+                            print(f"[AutoExtract] Estratto e sincronizzato con successo: {cand['title']}")
+                            extracted_names.add(cand["title"].lower())
+                    except Exception as err:
+                        print(f"[AutoExtract Error] Errore estrazione {cand['title']}: {err}")
+                    time.sleep(2)
+            
+            run_async(_check_and_extract(), timeout=180)
+        except Exception as e:
+            pass
+        
+        time.sleep(45)  # Riesegue il controllo ogni 45 secondi
+
+# Avvia il worker in background
+_auto_thread = threading.Thread(target=_auto_worker if False else _auto_extract_worker, daemon=True)
+_auto_thread.start()
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
