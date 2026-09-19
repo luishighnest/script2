@@ -377,6 +377,117 @@ def sort_saved_events():
     sync_to_github(f"edit: eventi riordinati per data ({_current_pid()})")
     return jsonify({"ok": True})
 
+@app.route("/api/events/sync_next", methods=["POST"])
+def sync_events_to_next():
+    if "user_profile_id" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+    
+    import re, unicodedata, requests
+    
+    pid = _current_pid()
+    local_data = _load(pid)
+    # Se il profilo corrente non ha eventi o è diverso da mpd, consideriamo anche dazn_event_mpd.json se esiste
+    if not local_data and pid != "mpd":
+        local_data = _load("mpd")
+    
+    if not local_data:
+        return jsonify({"ok": False, "error": "Nessun evento estratto da sincronizzare"}), 400
+
+    upstash_url = "https://ace-seal-162556.upstash.io"
+    upstash_token = "gQAAAAAAAnr8AAIgcDEyZjRkYjEwYmUzZDY0M2RhYjZkNjhmMDFjNGVkMjVmYw"
+    headers = {"Authorization": f"Bearer {upstash_token}"}
+    
+    try:
+        r = requests.get(f"{upstash_url}/get/stream:eventi", headers=headers, timeout=10)
+        res_json = r.json()
+        raw_val = res_json.get("result")
+        next_data = json.loads(raw_val) if raw_val else {}
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Errore lettura Next DB: {e}"}), 500
+
+    def _normalize_title(s: str) -> str:
+        if not s:
+            return ""
+        s = re.sub(r'[\(\[\{].*?[\)\]\}]', ' ', s) # rimuove (WARP), ecc.
+        s = s.replace("vs.", " ").replace("vs", " ").replace("-", " ").replace("|", " ")
+        s = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode('utf-8')
+        words = sorted([w for w in re.sub(r'[^a-zA-Z0-9]', ' ', s).lower().split() if w])
+        return " ".join(words)
+
+    updated_count = 0
+    added_count = 0
+
+    for comp, items in local_data.items():
+        if not isinstance(items, list):
+            continue
+        for ev in items:
+            ev_name = ev.get("name", "").strip()
+            norm_name = _normalize_title(ev_name)
+            if not norm_name:
+                continue
+
+            matched_item = None
+            
+            # Cerca prima nella stessa competizione (o competizione simile)
+            candidate_categories = [comp] if comp in next_data else []
+            candidate_categories += [c for c in next_data.keys() if c != comp]
+
+            for cat_key in candidate_categories:
+                for target_ev in next_data.get(cat_key, []):
+                    t_name = target_ev.get("name", "").strip()
+                    norm_t = _normalize_title(t_name)
+                    if not norm_t:
+                        continue
+                    
+                    # Match esatto dei token oppure inclusione sicura
+                    if norm_name == norm_t:
+                        matched_item = target_ev
+                        break
+                    set_a = set(norm_name.split())
+                    set_b = set(norm_t.split())
+                    if len(set_a) >= 2 and set_a.issubset(set_b) or (len(set_b) >= 2 and set_b.issubset(set_a)):
+                        matched_item = target_ev
+                        break
+                if matched_item:
+                    break
+
+            if matched_item:
+                # AGGIORNA SOLO I PARAMETRI DELLO STREAM, PRESERVANDO IMMAGINE E NOME ESISTENTI!
+                if ev.get("mpd"):
+                    matched_item["mpd"] = ev["mpd"]
+                    matched_item["url"] = ev["mpd"]
+                if ev.get("key"):
+                    matched_item["key"] = ev["key"]
+                    matched_item["kid_key"] = ev["key"]
+                if ev.get("ua"):
+                    matched_item["ua"] = ev["ua"]
+                if ev.get("start") and not matched_item.get("start"):
+                    matched_item["start"] = ev["start"]
+                if ev.get("end") and not matched_item.get("end"):
+                    matched_item["end"] = ev["end"]
+                updated_count += 1
+            else:
+                # Evento non trovato in Next: aggiungilo nella categoria corrispondente
+                next_data.setdefault(comp, []).append(ev)
+                added_count += 1
+
+    # Salva il dizionario unificato su Upstash Redis stream:eventi
+    try:
+        payload = json.dumps(next_data, ensure_ascii=False)
+        save_res = requests.post(f"{upstash_url}/set/stream:eventi", headers=headers, data=payload, timeout=10)
+        if save_res.status_code != 200:
+            return jsonify({"ok": False, "error": f"Errore scrittura Redis: {save_res.text}"}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Errore salvataggio Next DB: {e}"}), 500
+
+    return jsonify({
+        "ok": True,
+        "updated": updated_count,
+        "added": added_count,
+        "message": f"Sincronizzazione completata: {updated_count} eventi aggiornati con chiavi/mpd, {added_count} nuovi aggiunti."
+    })
+
+
 @app.route("/api/live", methods=["GET"])
 def get_live_events():
     if "user_profile_id" not in session:
@@ -772,7 +883,7 @@ def _auto_extract_worker():
         time.sleep(45)  # Riesegue il controllo ogni 45 secondi
 
 # Avvia il worker in background
-_auto_thread = threading.Thread(target=_auto_worker if False else _auto_extract_worker, daemon=True)
+_auto_thread = threading.Thread(target=_auto_extract_worker, daemon=True)
 _auto_thread.start()
 
 if __name__ == "__main__":
