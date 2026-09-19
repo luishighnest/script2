@@ -480,6 +480,44 @@ def sync_events_to_next():
     except Exception as e:
         return jsonify({"ok": False, "error": f"Errore salvataggio Next DB: {e}"}), 500
 
+    # Sincronizza anche localmente su next/public/test.json, htdocs/test.json e kodi_repo/test.json (AES-256-GCM)
+    try:
+        import os
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.backends import default_backend
+        import base64
+
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b"zadonkais_secure_salt_2026",
+            iterations=100000,
+            backend=default_backend()
+        )
+        key = kdf.derive("2941".encode("utf-8"))
+        aesgcm = AESGCM(key)
+        iv = os.urandom(12)
+        plaintext = json.dumps(next_data, ensure_ascii=False).encode("utf-8")
+        ciphertext = aesgcm.encrypt(iv, plaintext, None)
+        enc_payload = base64.b64encode(iv + ciphertext).decode("ascii")
+        json_enc_text = json.dumps({"enc": enc_payload}, indent=2, ensure_ascii=False) + "\n"
+
+        target_paths = [
+            Path(r"C:\Users\alecl\Desktop\next\public\test.json"),
+            Path(r"C:\Users\alecl\Desktop\htdocs\test.json"),
+            Path(r"C:\Users\alecl\Desktop\kodi_repo\test.json")
+        ]
+        for tp in target_paths:
+            if tp.parent.exists():
+                try:
+                    tp.write_text(json_enc_text, encoding="utf-8")
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"[Sync test.json Local Error] {e}")
+
     return jsonify({
         "ok": True,
         "updated": updated_count,
