@@ -1,23 +1,54 @@
 {
+   "Ferrari Challenge Australasia": [
+      {
+         "name": "Sydney | Gara",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/4irp1d36hpwcqqu6vtwk5tr3o_image-header_pIt_1789047347000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T08:45:00Z",
+         "end": "2026-09-19T09:45:00Z",
+         "mpd": "https://dca-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvaW1laHRxZHN1cnF5MTZ6NjY5a2dnZWozZCJdLCJleGMiOltdLCJoZWFkZXJzIjpbInVzZXItYWdlbnQiXSwiY28iOnRydWUsImlwIjpmYWxzZSwiYXNuIjpbIjEzMzM1Il0sInNzaWQiOiJhMzVkMDBlYzllMjMiLCJpbnRzaWciOiJZWG45TXdCMFRIMHZmUGsyZGJjRU02TzB3ajZzLUNDbjJZY1ZQQXVVQUNVIiwiaWF0IjoxNzg5ODA5MzE3LCJleHAiOjE3ODk4OTU3MTd9.lVhFKx37V7vMMOPcRg-S_nBZh-01f_BeVGUgUL7jJTw/imehtqdsurqy16z669kggej3d/web/stream.mpd?channel=7007&outlet=dazn-italy&plang=it",
+         "key": "a34c134696175bb18c8c1cef457b8753:f2078eaee3ae8dc9fcdb8b20d3e0c8dc",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
+   ],
+   "Serie A Enilive": [
+      {
+         "name": "Conferenza Stampa Ruben Amorim",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/cp9m28f1yemyj8m7czd316j9f_image-header_pIt_1787298706000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T12:00:00Z",
+         "end": "2026-09-19T13:15:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDU4NzAsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMmMwYTE4ZGEwYjljNWNiMzA1ODBiN2M5ZTgwYWI3MTA3MThlMDUzNyIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MTk0NzB9.YZHj3SKNZeMC1kbVXZBoseDZhkexxn-wOQ-GAqb25eY/bz07yrbwtea911p9h0ed7yram/web/stream.mpd?channel=5072&outlet=dazn-italy&plang=it",
+         "key": "d8a100249d5d5e20968ea46e5f593b1a:111e7016ef92b512bd08abfab0383a93",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      },
+      {
+         "name": "Zona Serie A Enilive | BOL-TOR, UDI-CAG",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/ez5kcq3gkt364kr0t7z79b5hc_image-header_pIt_1756299253000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T12:46:00Z",
+         "end": "2026-09-19T16:45:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDg0MjYsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiYTc4MjYwMTlkMzM0ODVmNmMzNTIxZjlkZmI2N2I1MGM2ZGY1YWEyNiIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MjIwMjZ9._8tcUgYBHAT8I9EbBFkPVJBpIkpSIjxtXotTlHBBqp8/1fn2mho1xambh1qglofiunsp8d/web/stream.mpd?channel=1528&outlet=dazn-italy&plang=it",
+         "key": "e4f3d258472d5c25bf1c424ab62945ef:f9a00e74ed3fc1925e63abe1f89e7d04",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
+   ],
+   "LALIGA EA SPORTS": [
+      {
+         "name": "Osasuna vs. Rayo Vallecano",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/c016ab5tonpf2yxz2r1uemodc_image-header_pIt_1783426036000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T12:00:00Z",
+         "end": "2026-09-19T14:30:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDU4NzMsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiYzQwY2U2OTU1ZmEzNWE4NTNhYTFhMjQ5ZDNiNmQ0Yjc0NWU4YmNiMyIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MTk0NzN9.Q_reJsNXh9RSlNThbxDouQGWl55bvJIp3pYIT6IhXFw/uum3hlrjssd012vdwv44xesys/web/stream.mpd?channel=3955&outlet=dazn-italy&plang=it",
+         "key": "66a6ccee1a7750b1ba31a432e39fa558:c99d37ac2abb881c4378be6840ae8235",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
+   ],
    "Live TV": [
       {
          "name": "DAZN 1",
          "image": "https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1788259786000/fill/none/top/none/100/1280/720/png/image",
          "start": "2024-05-23T10:00:00Z",
          "end": "3000-01-01T00:00:00Z",
-         "mpd": "https://dcs-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk4NDE4NDcsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoyLCJwYXRoIjoiOGViOTUwYjA5YmIxZjMzOTBlZDQ4ODgzN2VhZjk5ODY3MDc2OTRkMSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk3NTU0NDd9.FBsD9A2X78pvxsDQiC9L6WpKUOlgD_4Ho2XcIoXBo8Q/dash/dazn-linear-206/stream.mpd?p=web",
+         "mpd": "https://dcs-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6WyJ1c2VyLWFnZW50Il0sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiWVhuOU13QjBUSDB2ZlBrMmRiY0VNNk8wd2o2cy1DQ24yWWNWUEF1VUFDVSIsImlhdCI6MTc4OTgyMTMzMywiZXhwIjoxNzg5OTA3NzMzfQ.F2oTh64aneQdrsS7LnIdRMzR1VhUl8RbNoulP_nyDQ4/dash/dazn-linear-206/stream.mpd?p=web",
          "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      }
-   ],
-   "Serie A Enilive": [
-      {
-         "name": "Fantacalcio Night | Monza - Sassuolo",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/e5o58r6krzuk0zygtuil8okjf_image-header_pIt_1782214531000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-18T16:57:00Z",
-         "end": "2026-09-18T23:15:00Z",
-         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk4NDg5NTMsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMTEyOWJkMWE1NjU2Y2EzOTY3ODZiYTQzYzAzNjQyZDc4NzY3YWFhZSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk3NjI1NTN9.xRjLuWMI1Db7UmZwhHFHpvBJyjW-cFd5nWXrwGCq468/12t9jee7016gu11ozv3cm3mi6l/web/stream.mpd?channel=1638&outlet=dazn-italy&plang=it",
-         "key": "ffbdc83400285c4a996a77a928c6313d:8416512b8b730968c37502bc722a9f79",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ]
