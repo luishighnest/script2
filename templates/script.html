@@ -432,9 +432,7 @@
 
                 <!-- Pulsanti Azione Rapida Eventi Estratti -->
                 <div id="events-actions-bar" class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-success" id="btn-sync-next" onclick="syncToNext()" title="Sincronizza MPD e chiavi su Next (senza duplicare locandine)">
-                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> Sincronizza su Next
-                    </button>
+
                     <button class="btn btn-sm btn-outline-light" onclick="sortEvents()" title="Ordina per data di inizio">
                         <i class="fa-solid fa-arrow-down-short-wide me-1"></i> Ordina per data
                     </button>
@@ -863,33 +861,6 @@ async function deleteEvent(encodedComp, index) {
             }
         }
 
-        async function syncToNext() {
-            const btn = document.getElementById('btn-sync-next');
-            const originalHtml = btn ? btn.innerHTML : '';
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Sincronizzazione...';
-            }
-            try {
-                const res = await fetch('/api/events/sync_next', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-                if (data.ok) {
-                    alert("✓ " + data.message);
-                } else {
-                    alert("Errore nella sincronizzazione: " + (data.error || "Sconosciuto"));
-                }
-            } catch (err) {
-                alert("Errore di rete: " + err.message);
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                }
-            }
-        }
 
         async function loadVod() {
             const container = document.getElementById('vod-container');
