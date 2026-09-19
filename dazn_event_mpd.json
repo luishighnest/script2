@@ -69,5 +69,16 @@
          "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
+   ],
+   "Serie BKT": [
+      {
+         "name": "Palermo - Padova",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/ctu6wnp7y7leozeerpt3fk40d_image-header_pIt_1784922426000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-19T13:00:00Z",
+         "end": "2026-09-19T15:30:00Z",
+         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODk5MDg0ODYsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiMjkzMDU1NTQ0ZDMzNDNmM2E2OWUxZWU0ZmZiNThkYWJmNzI1ZGRkNCIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3ODk4MjIwODZ9.36QSafZMcS-I3521VsIDBusXmXdPuGOxt7_u2BDd1kI/13lfz8xn0qm5c17o215qeqpy8x/web/stream.mpd?channel=3952&outlet=dazn-italy&plang=it",
+         "key": "97a252e48e335e37ad0819ce00c59392:bc5e2fe4c95a50c6bd7ce32e5ece1775",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
    ]
 }
