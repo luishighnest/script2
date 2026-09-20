@@ -173,3 +173,24 @@
 2026-09-19 14:17:44.218: [INFO] BookmarksLoadDropped droppedNodes=0
 2026-09-19 14:17:44.218: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
 2026-09-19 15:16:43.223: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-19 17:19:06.213: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-19 17:19:06.213: [INFO] Profiles total count: 1
+2026-09-19 17:19:06.215: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-19T14:17:43.830Z
+2026-09-19 17:19:06.215: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-19 17:19:06.215: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-19T14:17:43.830Z
+2026-09-19 17:19:06.215: [INFO] VisibilityChanged: 0
+2026-09-19 17:19:06.379: [INFO] OnDoneLoading sync enabled: 0
+2026-09-19 17:19:06.379: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-19 17:19:06.379: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-19 17:19:06.379: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-19 23:21:10.896: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-19 23:21:10.896: [INFO] Profiles total count: 1
+2026-09-19 23:21:10.898: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-19T17:19:06.297Z
+2026-09-19 23:21:10.898: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-19 23:21:10.898: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-19T17:19:06.297Z
+2026-09-19 23:21:10.898: [INFO] VisibilityChanged: 0
+2026-09-19 23:21:11.007: [INFO] OnDoneLoading sync enabled: 0
+2026-09-19 23:21:11.007: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-19 23:21:11.007: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-19 23:21:11.007: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-20 07:46:30.338: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
