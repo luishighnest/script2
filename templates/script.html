@@ -871,16 +871,69 @@ async function deleteEvent(encodedComp, index) {
                 </div>
             `;
             try {
-                const res = await fetch('/api/vod');
+                const res = await fetch('/api/vod/categories');
                 if (!res.ok) {
                     const txt = await res.text();
                     throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
                 }
-                const tiles = await res.json();
-                renderTileGrid(tiles, container, 'vod');
+                const data = await res.json();
+                renderVodCategories(data, container);
             } catch (err) {
                 container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore caricamento VOD: ${err.message}</div>`;
             }
+        }
+
+        function renderVodCategories(data, container) {
+            container.innerHTML = '';
+
+            if (data && data.error) {
+                container.innerHTML = `<div class="col-12 text-danger text-center py-5">Errore VOD: ${data.error}</div>`;
+                return;
+            }
+
+            const ultimi = Array.isArray(data && data.ultimi) ? data.ultimi : [];
+            const categorie = (data && data.categorie) || {};
+
+            if (ultimi.length === 0 && Object.keys(categorie).length === 0) {
+                container.innerHTML = `<div class="col-12 text-center text-muted py-5">Nessun contenuto VOD disponibile.</div>`;
+                return;
+            }
+
+            if (ultimi.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'w-100';
+                header.innerHTML = `
+                    <div class="d-flex align-items-center mb-2 mt-1">
+                        <h6 class="text-white mb-0"><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>Ultimi VOD</h6>
+                    </div>
+                `;
+                container.appendChild(header);
+
+                const grid = document.createElement('div');
+                grid.className = 'row g-2';
+                container.appendChild(grid);
+                renderTiles(ultimi, grid, 'vod');
+            }
+
+            Object.entries(categorie)
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .forEach(([catName, tiles]) => {
+                    if (!Array.isArray(tiles) || tiles.length === 0) return;
+
+                    const header = document.createElement('div');
+                    header.className = 'w-100 mt-3';
+                    header.innerHTML = `
+                        <div class="d-flex align-items-center mb-2">
+                            <h6 class="text-white mb-0"><i class="fa-solid fa-tags me-2 text-warning"></i>${catName}</h6>
+                        </div>
+                    `;
+                    container.appendChild(header);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'row g-2';
+                    container.appendChild(grid);
+                    renderTiles(tiles, grid, 'vod');
+                });
         }
 
         async function loadLinear() {
@@ -945,7 +998,11 @@ async function deleteEvent(encodedComp, index) {
                 return;
             }
 
-tiles.forEach(t => {
+            renderTiles(tiles, container, contextType);
+        }
+
+        function renderTiles(tiles, grid, contextType) {
+            tiles.forEach(t => {
                 const col = document.createElement('div');
                 col.className = 'poster-col';
                 const ttype = (t.tile_type || '').toLowerCase();
@@ -984,7 +1041,7 @@ tiles.forEach(t => {
                         </div>
                     </div>
                 `;
-                container.appendChild(col);
+                grid.appendChild(col);
             });
         }
 

@@ -562,6 +562,32 @@ def get_vod_events():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/vod/categories", methods=["GET"])
+def get_vod_categories():
+    if "user_profile_id" not in session:
+        return jsonify({"error": "Non autenticato"}), 401
+
+    async def _fetch():
+        explorer = DaznExplorer()
+        res = await explorer.get_vod_categories()
+        await explorer.close()
+
+        ultimi = [_format_tile_item(t) for t in res.get("ultimi", [])]
+
+        categorie = {}
+        for t in res.get("all", []):
+            item = _format_tile_item(t)
+            cname = item.get("competition") or "Altro"
+            categorie.setdefault(cname, []).append(item)
+
+        return {"ultimi": ultimi, "categorie": categorie}
+
+    try:
+        data = run_async(_fetch(), timeout=90)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/linear", methods=["GET"])
 def get_linear_channels():
     if "user_profile_id" not in session:

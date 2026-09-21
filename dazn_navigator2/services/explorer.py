@@ -298,6 +298,90 @@ class DaznExplorer:
         except DaznAPIError:
             return []
 
+    async def get_vod_categories(self) -> dict:
+        """Recupera i VOD: ultimi (rail Catchup) e tutti i VOD delle categorie sportive, deduplicati per asset."""
+        recent = []
+        try:
+            recent = await self.get_tiles("Catchup")
+        except Exception:
+            pass
+
+        category_tiles = []
+
+        cat_ids = {
+            "SerieA": "Serie A",
+            "SerieB": "Serie B",
+            "LaLiga": "La Liga",
+            "Basketball": "Basket",
+            "Tennis": "Tennis",
+            "Motorsport": "Motori",
+            "NFL": "NFL",
+            "AmericanFootball": "Football Americano",
+            "Volleyball": "Pallavolo",
+            "RugbyUnion": "Rugby",
+            "Darts": "Freccette",
+            "Snooker": "Snooker",
+            "Boxing": "Boxe",
+            "MMA": "MMA / Arti Marziali",
+            "Cycling": "Ciclismo",
+            "eSports": "eSports",
+        }
+
+        try:
+            from dazn_navigator2.services.browser import get_browser
+            b = await get_browser()
+            await b.ensure_session()
+        except Exception:
+            b = None
+
+        if b is not None:
+            sem = asyncio.Semaphore(3)
+
+            async def _fetch_cat(cat_id, label):
+                async with sem:
+                    try:
+                        v9_url = (
+                            f"https://rails.discovery.indazn.com/eu/v9/rails"
+                            f"?groupId={cat_id}&params=PageType:{cat_id}&country=it&brand=dazn"
+                        )
+                        res = await b.fetch_json(v9_url)
+                        if not res or not res.get("ok"):
+                            return
+                        raw_tiles = []
+                        for r in (res.get("data", {}) or {}).get("Rails", []):
+                            raw_tiles.extend(r.get("Tiles", []))
+                        for t in raw_tiles:
+                            ttype = (t.get("Type", "") or "").lower()
+                            if ttype not in ("catchup", "ondemand"):
+                                continue
+                            ct = ContentTile(
+                                id=t.get("Id", ""),
+                                asset_id=t.get("AssetId", "") or t.get("Id", ""),
+                                title=t.get("Title", "Senza titolo"),
+                                description=t.get("Description", ""),
+                                section=label,
+                                tile_type=t.get("Type", "Unknown"),
+                                image=t.get("Image", "") or t.get("HeroImage", "") or "",
+                                raw=t,
+                            )
+                            category_tiles.append(ct)
+                    except Exception:
+                        pass
+
+            await asyncio.gather(*[_fetch_cat(cid, lab) for cid, lab in cat_ids.items()])
+
+        # Deduplica TUTTI i VOD per asset_id
+        seen = set()
+        all_tiles = []
+        for t in list(recent) + category_tiles:
+            aid = t.asset_id or t.id
+            if not aid or aid in seen:
+                continue
+            seen.add(aid)
+            all_tiles.append(t)
+
+        return {"ultimi": recent, "all": all_tiles}
+
     async def _fetch_epg(self) -> List[ContentTile]:
         data = await self.client.get(
             "/Rail?platform=web&id=LinearChannels&country=it&brand=dazn&languageCode=it"
