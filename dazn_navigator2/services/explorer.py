@@ -332,16 +332,28 @@ class DaznExplorer:
             async with sem:
                 try:
                     items = []
-                    cid = await self._search_competition_cid(label)
+                    cid = ""
+                    try:
+                        cid = await self._search_competition_cid(label)
+                    except Exception:
+                        cid = ""
                     if cid:
-                        items = await self._fetch_competition_all_vods(cid, label)
-                        # Se la paginazione della rail stagionale è fallita (es. risposta
-                        # incompleta), integra sempre con i risultati della ricerca così
-                        # il bucket non resta mai quasi vuoto.
-                        if len(items) < 20:
-                            items += await self._search_vod_tiles(label)
+                        try:
+                            items = await self._fetch_competition_all_vods(cid, label)
+                        except Exception:
+                            items = []
+                        # Fonde SEMPRE anche i risultati della ricerca dedicata:
+                        # garantisce una copertura completa anche se la rail stagionale
+                        # dovesse fallire (overlap rimosso dal dedup finale).
+                        try:
+                            items += await self._search_vod_tiles(label, cid)
+                        except Exception:
+                            pass
                     if not items:
-                        items = await self._search_vod_tiles(label)
+                        try:
+                            items = await self._search_vod_tiles(label)
+                        except Exception:
+                            items = []
                     category_tiles.extend(items)
                 except Exception:
                     pass
@@ -391,7 +403,7 @@ class DaznExplorer:
                     return tid.split(":", 1)[1]
         return ""
 
-    async def _search_vod_tiles(self, query: str) -> List[ContentTile]:
+    async def _search_vod_tiles(self, query: str, cid: str = "") -> List[ContentTile]:
         data = await self._search_raw(query)
         items = []
         seen = set()
@@ -399,6 +411,9 @@ class DaznExplorer:
             for t in cat.get("Tiles", []):
                 ttype = (t.get("Type", "") or "").lower()
                 if ttype not in ("catchup", "ondemand"):
+                    continue
+                comp = t.get("Competition")
+                if isinstance(comp, dict) and comp.get("Id") and cid and comp.get("Id") != cid:
                     continue
                 aid = t.get("AssetId", "") or t.get("Id", "")
                 if not aid or aid in seen:
