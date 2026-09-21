@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import shutil
+import time
 import zipfile
 import subprocess
 from pathlib import Path
@@ -35,6 +36,12 @@ from dazn_navigator2.services.browser import BrowserManager
 _ASYNC_LOOP = None
 _ASYNC_THREAD = None
 _LOOP_LOCK = threading.Lock()
+
+# Cache dei VOD (solo sezione VOD): evita di rifare le ~70 chiamate DAZN a ogni click
+_VOD_CACHE = None
+_VOD_CACHE_TIME = 0
+_VOD_CACHE_TTL = 300
+_VOD_CACHE_LOCK = threading.Lock()
 
 def _start_background_loop(loop):
     asyncio.set_event_loop(loop)
@@ -567,6 +574,11 @@ def get_vod_categories():
     if "user_profile_id" not in session:
         return jsonify({"error": "Non autenticato"}), 401
 
+    global _VOD_CACHE, _VOD_CACHE_TIME
+    with _VOD_CACHE_LOCK:
+        if _VOD_CACHE is not None and (time.monotonic() - _VOD_CACHE_TIME) < _VOD_CACHE_TTL:
+            return jsonify(_VOD_CACHE)
+
     async def _fetch():
         explorer = DaznExplorer()
         res = await explorer.get_vod_categories()
@@ -583,7 +595,10 @@ def get_vod_categories():
         return {"ultimi": ultimi, "categorie": categorie}
 
     try:
-        data = run_async(_fetch(), timeout=90)
+        data = run_async(_fetch(), timeout=150)
+        with _VOD_CACHE_LOCK:
+            _VOD_CACHE = data
+            _VOD_CACHE_TIME = time.monotonic()
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -299,14 +299,12 @@ class DaznExplorer:
             return []
 
     async def get_vod_categories(self) -> dict:
-        """Recupera i VOD: ultimi (rail Catchup) e tutti i VOD delle categorie sportive, deduplicati per asset."""
+        """Recupera i VOD: ultimi (rail Catchup) e TUTTI i VOD di ogni competizione sportiva (stagione intera), deduplicati per asset."""
         recent = []
         try:
             recent = await self.get_tiles("Catchup")
         except Exception:
             pass
-
-        category_tiles = []
 
         cat_ids = {
             "SerieA": "Serie A",
@@ -327,48 +325,23 @@ class DaznExplorer:
             "eSports": "eSports",
         }
 
-        try:
-            from dazn_navigator2.services.browser import get_browser
-            b = await get_browser()
-            await b.ensure_session()
-        except Exception:
-            b = None
+        category_tiles = []
+        sem = asyncio.Semaphore(3)
 
-        if b is not None:
-            sem = asyncio.Semaphore(3)
+        async def _fetch_cat(cat_id, label):
+            async with sem:
+                try:
+                    items = []
+                    cid = await self._search_competition_cid(label)
+                    if cid:
+                        items = await self._fetch_competition_all_vods(cid, label)
+                    if not items:
+                        items = await self._search_vod_tiles(label)
+                    category_tiles.extend(items)
+                except Exception:
+                    pass
 
-            async def _fetch_cat(cat_id, label):
-                async with sem:
-                    try:
-                        v9_url = (
-                            f"https://rails.discovery.indazn.com/eu/v9/rails"
-                            f"?groupId={cat_id}&params=PageType:{cat_id}&country=it&brand=dazn"
-                        )
-                        res = await b.fetch_json(v9_url)
-                        if not res or not res.get("ok"):
-                            return
-                        raw_tiles = []
-                        for r in (res.get("data", {}) or {}).get("Rails", []):
-                            raw_tiles.extend(r.get("Tiles", []))
-                        for t in raw_tiles:
-                            ttype = (t.get("Type", "") or "").lower()
-                            if ttype not in ("catchup", "ondemand"):
-                                continue
-                            ct = ContentTile(
-                                id=t.get("Id", ""),
-                                asset_id=t.get("AssetId", "") or t.get("Id", ""),
-                                title=t.get("Title", "Senza titolo"),
-                                description=t.get("Description", ""),
-                                section=label,
-                                tile_type=t.get("Type", "Unknown"),
-                                image=t.get("Image", "") or t.get("HeroImage", "") or "",
-                                raw=t,
-                            )
-                            category_tiles.append(ct)
-                    except Exception:
-                        pass
-
-            await asyncio.gather(*[_fetch_cat(cid, lab) for cid, lab in cat_ids.items()])
+        await asyncio.gather(*[_fetch_cat(cid, lab) for cid, lab in cat_ids.items()])
 
         # Deduplica TUTTI i VOD per asset_id
         seen = set()
@@ -381,6 +354,142 @@ class DaznExplorer:
             all_tiles.append(t)
 
         return {"ultimi": recent, "all": all_tiles}
+
+    async def _search_raw(self, query: str) -> dict:
+        import urllib.parse
+        from dazn_navigator2.services.extractor import _get_http_session
+        url = f"https://search.discovery.indazn.com/v1/search?searchTerm={urllib.parse.quote(query)}&country=it&brand=dazn"
+        try:
+            client = await _get_http_session()
+            resp = await client.get(url, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                if any(c.get("Tiles") for c in data.get("Results", [])):
+                    return data
+        except Exception:
+            pass
+        from dazn_navigator2.services.browser import get_browser
+        b = await get_browser()
+        await b.ensure_session()
+        result = await b.fetch_json(url)
+        if result.get("ok"):
+            return result.get("data", {})
+        return {}
+
+    async def _search_competition_cid(self, query: str) -> str:
+        data = await self._search_raw(query)
+        for cat in data.get("Results", []):
+            for t in cat.get("Tiles", []):
+                tid = str(t.get("Id", ""))
+                if t.get("Type") == "Navigation" and tid.startswith("Competition:"):
+                    return tid.split(":", 1)[1]
+        return ""
+
+    async def _search_vod_tiles(self, query: str) -> List[ContentTile]:
+        data = await self._search_raw(query)
+        items = []
+        seen = set()
+        for cat in data.get("Results", []):
+            for t in cat.get("Tiles", []):
+                ttype = (t.get("Type", "") or "").lower()
+                if ttype not in ("catchup", "ondemand"):
+                    continue
+                aid = t.get("AssetId", "") or t.get("Id", "")
+                if not aid or aid in seen:
+                    continue
+                seen.add(aid)
+                items.append(ContentTile(
+                    id=t.get("Id", ""),
+                    asset_id=aid,
+                    title=t.get("Title", "Senza titolo"),
+                    description=t.get("Description", ""),
+                    section=query,
+                    tile_type=t.get("Type", "Unknown"),
+                    image=t.get("Image", "") or t.get("HeroImage", "") or "",
+                    raw=t,
+                ))
+        return items
+
+    async def _fetch_competition_all_vods(self, cid: str, label: str) -> List[ContentTile]:
+        """Paginazione completa della rail 'Tutte le partite e gli highlights' della competizione (stagione intera)."""
+        from dazn_navigator2.services.browser import get_browser
+        b = await get_browser()
+        await b.ensure_session()
+
+        v9_url = (
+            f"https://rails.discovery.indazn.com/eu/v9/rails"
+            f"?groupId=Competition&params=PageType:Competition;ContentId:{cid}&country=it&brand=dazn"
+        )
+        res = await b.fetch_json(v9_url)
+        if not res.get("ok"):
+            return []
+
+        context = f"PageType:Competition;ContentType:None;ContentId:{cid}"
+        rails = (res.get("data") or {}).get("Rails", [])
+
+        collected = []
+        full_rail_id = None
+
+        for r in rails:
+            rid = r.get("Id", "")
+            if not rid:
+                continue
+            try:
+                data = await self.client.get(
+                    f"/Rail?platform=web&id={rid}&country=it&brand=dazn&languageCode=it&params={context}"
+                )
+            except DaznAPIError:
+                continue
+            title = (data.get("Title") or "") or ""
+            if "tutte le partite" in title.lower():
+                full_rail_id = rid
+                break
+            for t in data.get("Tiles", []):
+                comp = t.get("Competition")
+                ttype = (t.get("Type", "") or "").lower()
+                if isinstance(comp, dict) and comp.get("Id") == cid and ttype in ("catchup", "ondemand"):
+                    collected.append(t)
+
+        if full_rail_id:
+            collected = []
+            page = 1
+            total_pages = None
+            while True:
+                try:
+                    data = await self.client.get(
+                        f"/Rail?platform=web&id={full_rail_id}&country=it&brand=dazn&languageCode=it"
+                        f"&params={context}&Page={page}"
+                    )
+                except DaznAPIError:
+                    break
+                for t in data.get("Tiles", []):
+                    comp = t.get("Competition")
+                    ttype = (t.get("Type", "") or "").lower()
+                    if isinstance(comp, dict) and comp.get("Id") == cid and ttype in ("catchup", "ondemand"):
+                        collected.append(t)
+                total_pages = data.get("TotalPages")
+                page += 1
+                if total_pages is None or page > total_pages or page > 20:
+                    break
+
+        items = []
+        seen = set()
+        for t in collected:
+            aid = t.get("AssetId", "") or t.get("Id", "")
+            if not aid or aid in seen:
+                continue
+            seen.add(aid)
+            items.append(ContentTile(
+                id=t.get("Id", ""),
+                asset_id=aid,
+                title=t.get("Title", "Senza titolo"),
+                description=t.get("Description", ""),
+                section=label,
+                tile_type=t.get("Type", "Unknown"),
+                image=t.get("Image", "") or t.get("HeroImage", "") or "",
+                raw=t,
+            ))
+        return items
 
     async def _fetch_epg(self) -> List[ContentTile]:
         data = await self.client.get(
