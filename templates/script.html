@@ -655,6 +655,7 @@ if (data.ok) {
 
         async function loadExtracted() {
             try {
+                window.__extractedEntries = [];
                 const res = await fetch('/api/events');
                 const data = await res.json();
                 const container = document.getElementById('extracted-container');
@@ -1212,17 +1213,71 @@ async function deleteEvent(encodedComp, index) {
             }
         }
 
-function copyText(text, msg) {
-            navigator.clipboard.writeText(text);
+function showCopyToast(msg, isError) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'extract-toast ' + (isError ? 'error' : 'success');
+            toast.innerHTML = `
+                <div class="toast-icon ${isError ? 'text-danger' : 'text-success'}">
+                    <i class="${isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${msg}</div>
+                    <div class="toast-desc ${isError ? 'text-danger' : 'text-success'}">${isError ? 'Link estensione non disponibile per questo evento.' : 'Contenuto copiato negli appunti.'}</div>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
         }
 
-        window.__extractedEntries = [];
+        function fallbackCopyText(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.top = '0';
+            ta.style.left = '0';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            let ok = false;
+            try {
+                ok = document.execCommand('copy');
+            } catch (e) { ok = false; }
+            ta.remove();
+            return ok;
+        }
+
+        function copyText(text, msg) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(
+                    () => showCopyToast(msg || 'Testo copiato!', false),
+                    () => {
+                        if (fallbackCopyText(text)) showCopyToast(msg || 'Testo copiato!', false);
+                        else showCopyToast('Copia non riuscita', true);
+                    });
+            } else if (fallbackCopyText(text)) {
+                showCopyToast(msg || 'Testo copiato!', false);
+            } else {
+                showCopyToast('Copia non riuscita', true);
+            }
+        }
 
         function copyEntry(index, field, msg) {
             const entry = window.__extractedEntries[index];
-            if (!entry || !entry[field]) return;
-            navigator.clipboard.writeText(entry[field]);
+            if (!entry || !entry[field]) {
+                showCopyToast(field === 'extUrl' ? 'Link estensione non disponibile' : 'Dato non disponibile', true);
+                return;
+            }
+            copyText(entry[field], msg);
         }
+
+        window.__extractedEntries = [];
 
         function refreshData() {
             loadExtracted();

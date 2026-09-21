@@ -790,7 +790,8 @@ def extract_stream():
                 "end": end,
                 "mpd": mpd_auth,
                 "key": keys_str,
-                "ua": ua_str
+                "ua": ua_str,
+                "ext_url": res.get("ext_url", "")
             }
             add_event(competition, entry, _current_pid())
             sync_to_github(f"extract: salvato evento {event_name} ({_current_pid()})")
