@@ -9,16 +9,5 @@
          "key": "e7610c0526485158a97a480e0a6f085e:608e39b2c51c48ff0ac0876f55062697",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
-   ],
-   "CEV Enel EuroVolley 2026 (M)": [
-      {
-         "name": "Ottavi | Slovenia - Serbia",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/948lfpoxbpf4xql9mpvavuni8_image-header_pIt_1789740251000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-21T19:00:00Z",
-         "end": "2026-09-21T22:00:00Z",
-         "mpd": "https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTAxMDQ2NjIsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiZDkxZDNlMGFhMTcxZDkxZDQ2MTc2YzdiOTRkMmNjNWIxYzdlZjBhMSIsInNzaWQiOiJhMzVkMDBlYzllMjMiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIxMzMzNSJdLCJ1YSI6IjczNGI2ZWFkNzU5YjQ3OWE0MjkyYWE5MjQ5NGMxMTc3MjM0YmRjYzkiLCJpYXQiOjE3OTAwMTgyNjJ9.pegaHs_PdbuoOQ7qGmkUWNFOT-rss_22qHX-ME8YUYs/g12d7puhtjxk1vsw4xyloj2te/web/stream.mpd?channel=3934&outlet=dazn-italy&plang=it",
-         "key": "cf09045b3c4c566485843afedcec5e4c:1c0693f5efa4abb1f7f00ccd660c1803",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      }
    ]
 }
