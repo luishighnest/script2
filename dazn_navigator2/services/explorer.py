@@ -335,6 +335,11 @@ class DaznExplorer:
                     cid = await self._search_competition_cid(label)
                     if cid:
                         items = await self._fetch_competition_all_vods(cid, label)
+                        # Se la paginazione della rail stagionale è fallita (es. risposta
+                        # incompleta), integra sempre con i risultati della ricerca così
+                        # il bucket non resta mai quasi vuoto.
+                        if len(items) < 20:
+                            items += await self._search_vod_tiles(label)
                     if not items:
                         items = await self._search_vod_tiles(label)
                     category_tiles.extend(items)
@@ -442,9 +447,9 @@ class DaznExplorer:
             except DaznAPIError:
                 continue
             title = (data.get("Title") or "") or ""
-            if "tutte le partite" in title.lower():
+            if full_rail_id is None and "tutte le partite" in title.lower():
                 full_rail_id = rid
-                break
+                continue
             for t in data.get("Tiles", []):
                 comp = t.get("Competition")
                 ttype = (t.get("Type", "") or "").lower()
@@ -452,26 +457,35 @@ class DaznExplorer:
                     collected.append(t)
 
         if full_rail_id:
-            collected = []
-            page = 1
-            total_pages = None
-            while True:
+            pages_tiles = []
+            collected_pages = False
+            for _attempt in range(2):
                 try:
-                    data = await self.client.get(
-                        f"/Rail?platform=web&id={full_rail_id}&country=it&brand=dazn&languageCode=it"
-                        f"&params={context}&Page={page}"
-                    )
+                    pages_tiles = []
+                    page = 1
+                    total_pages = None
+                    while True:
+                        data = await self.client.get(
+                            f"/Rail?platform=web&id={full_rail_id}&country=it&brand=dazn&languageCode=it"
+                            f"&params={context}&Page={page}"
+                        )
+                        for t in data.get("Tiles", []):
+                            comp = t.get("Competition")
+                            ttype = (t.get("Type", "") or "").lower()
+                            if isinstance(comp, dict) and comp.get("Id") == cid and ttype in ("catchup", "ondemand"):
+                                pages_tiles.append(t)
+                        total_pages = data.get("TotalPages")
+                        page += 1
+                        if total_pages is None or page > total_pages or page > 20:
+                            break
+                    collected_pages = True
+                    break
                 except DaznAPIError:
-                    break
-                for t in data.get("Tiles", []):
-                    comp = t.get("Competition")
-                    ttype = (t.get("Type", "") or "").lower()
-                    if isinstance(comp, dict) and comp.get("Id") == cid and ttype in ("catchup", "ondemand"):
-                        collected.append(t)
-                total_pages = data.get("TotalPages")
-                page += 1
-                if total_pages is None or page > total_pages or page > 20:
-                    break
+                    await asyncio.sleep(1)
+            # Usa le pagine complete solo se la paginazione è andata a buon fine,
+            # altrimenti tieni ciò che è stato già raccolto dalle altre rail.
+            if collected_pages:
+                collected = pages_tiles
 
         items = []
         seen = set()
