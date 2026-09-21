@@ -899,41 +899,86 @@ async function deleteEvent(encodedComp, index) {
                 return;
             }
 
-            if (ultimi.length > 0) {
+            const byCat = {};
+            if (ultimi.length > 0) byCat['Ultimi VOD'] = ultimi;
+            Object.entries(categorie).forEach(([k, v]) => {
+                if (Array.isArray(v) && v.length > 0) byCat[k] = v;
+            });
+
+            const showList = () => {
+                container.innerHTML = '';
                 const header = document.createElement('div');
                 header.className = 'w-100';
-                header.innerHTML = `
-                    <div class="d-flex align-items-center mb-2 mt-1">
-                        <h6 class="text-white mb-0"><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>Ultimi VOD</h6>
-                    </div>
-                `;
+                header.innerHTML = '<div class="d-flex align-items-center mb-3"><h6 class="text-white mb-0"><i class="fa-solid fa-table-list me-2 text-info"></i>VOD per categoria - scegli una categoria</h6></div>';
                 container.appendChild(header);
+
+                const row = document.createElement('div');
+                row.className = 'row g-2';
+                Object.entries(byCat)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .forEach(([name, tiles]) => {
+                        const col = document.createElement('div');
+                        col.className = 'col-6 col-md-4 col-lg-3';
+                        const btn = document.createElement('button');
+                        btn.className = 'btn btn-outline-warning w-100 text-start mb-2 d-flex justify-content-between align-items-center';
+                        const spanTitle = document.createElement('span');
+                        const icon = document.createElement('i');
+                        icon.className = 'fa-solid fa-folder-open me-2';
+                        spanTitle.appendChild(icon);
+                        spanTitle.appendChild(document.createTextNode(name));
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-secondary ms-1';
+                        badge.textContent = tiles.length;
+                        btn.appendChild(spanTitle);
+                        btn.appendChild(badge);
+                        btn.addEventListener('click', () => showCat(name));
+                        col.appendChild(btn);
+                        row.appendChild(col);
+                    });
+                container.appendChild(row);
+            };
+
+            const showCat = (name) => {
+                container.innerHTML = '';
+                const tiles = byCat[name] || [];
+                const header = document.createElement('div');
+                header.className = 'w-100';
+                const backBtn = document.createElement('button');
+                backBtn.className = 'btn btn-sm btn-outline-info mb-2';
+                backBtn.textContent = '← Torna alle categorie';
+                backBtn.addEventListener('click', showList);
+                const title = document.createElement('h6');
+                title.className = 'text-white mb-0';
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-tags me-2 text-warning';
+                title.appendChild(icon);
+                title.appendChild(document.createTextNode(name));
+                const count = document.createElement('small');
+                count.className = 'ms-2 text-muted';
+                count.textContent = `${tiles.length} contenuti`;
+                title.appendChild(count);
+
+                const div = document.createElement('div');
+                div.className = 'd-flex align-items-center mb-3';
+                div.append(backBtn, title);
+                header.appendChild(div);
+                container.appendChild(header);
+
+                if (tiles.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'col-12 text-center text-muted py-5';
+                    empty.textContent = 'Nessun contenuto in questa categoria.';
+                    container.appendChild(empty);
+                    return;
+                }
 
                 const grid = document.createElement('div');
                 grid.className = 'row g-2';
                 container.appendChild(grid);
-                renderTiles(ultimi, grid, 'vod');
-            }
+                renderTiles(tiles, grid, 'vod');
+            };
 
-            Object.entries(categorie)
-                .sort((a, b) => a[0].localeCompare(b[0]))
-                .forEach(([catName, tiles]) => {
-                    if (!Array.isArray(tiles) || tiles.length === 0) return;
-
-                    const header = document.createElement('div');
-                    header.className = 'w-100 mt-3';
-                    header.innerHTML = `
-                        <div class="d-flex align-items-center mb-2">
-                            <h6 class="text-white mb-0"><i class="fa-solid fa-tags me-2 text-warning"></i>${catName}</h6>
-                        </div>
-                    `;
-                    container.appendChild(header);
-
-                    const grid = document.createElement('div');
-                    grid.className = 'row g-2';
-                    container.appendChild(grid);
-                    renderTiles(tiles, grid, 'vod');
-                });
+            showList();
         }
 
         async function loadLinear() {
