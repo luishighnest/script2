@@ -216,3 +216,47 @@
 2026-09-21 12:48:17.054: [INFO] BookmarksLoadDropped droppedNodes=0
 2026-09-21 12:48:17.054: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
 2026-09-21 16:41:31.160: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 17:58:16.922: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 17:58:16.922: [INFO] Profiles total count: 1
+2026-09-21 17:58:16.939: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T17:57:31.668Z
+2026-09-21 17:58:16.940: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 17:58:17.100: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T17:57:31.668Z
+2026-09-21 17:58:17.100: [INFO] VisibilityChanged: 0
+2026-09-21 17:58:17.686: [INFO] OnDoneLoading sync enabled: 0
+2026-09-21 17:58:17.686: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-21 17:58:17.686: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-21 17:58:17.686: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 17:58:25.982: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 18:04:59.531: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 18:04:59.531: [INFO] Profiles total count: 1
+2026-09-21 18:04:59.531: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T18:02:44.597Z
+2026-09-21 18:04:59.531: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 18:04:59.531: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T18:02:44.597Z
+2026-09-21 18:04:59.532: [INFO] VisibilityChanged: 0
+2026-09-21 18:04:59.637: [INFO] OnDoneLoading sync enabled: 0
+2026-09-21 18:04:59.637: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-21 18:04:59.637: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-21 18:04:59.637: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 18:05:50.813: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 18:10:18.075: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 18:10:18.076: [INFO] Profiles total count: 1
+2026-09-21 18:10:18.076: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T18:09:33.824Z
+2026-09-21 18:10:18.076: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 18:10:18.076: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T18:09:33.824Z
+2026-09-21 18:10:18.076: [INFO] VisibilityChanged: 0
+2026-09-21 18:10:18.175: [INFO] OnDoneLoading sync enabled: 0
+2026-09-21 18:10:18.175: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-21 18:10:18.175: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-21 18:10:18.175: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 18:11:19.687: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 18:50:29.256: [INFO] CurrentProfilePath: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 18:50:29.256: [INFO] Profiles total count: 1
+2026-09-21 18:50:29.259: [INFO] Profile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T18:37:00.269Z
+2026-09-21 18:50:29.259: [INFO] LastUsedProfileDir: C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default
+2026-09-21 18:50:29.260: [INFO] MostRecentlyActiveProfile: name=Profilo 1 path=C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default lastActive=2026-09-21T18:37:00.269Z
+2026-09-21 18:50:29.260: [INFO] VisibilityChanged: 0
+2026-09-21 18:50:29.365: [INFO] OnDoneLoading sync enabled: 0
+2026-09-21 18:50:29.365: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-21 18:50:29.365: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-21 18:50:29.365: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-21 18:50:55.911: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
