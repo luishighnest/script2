@@ -343,10 +343,11 @@ class DaznExplorer:
 
         await asyncio.gather(*[_fetch_cat(cid, lab) for cid, lab in cat_ids.items()])
 
-        # Deduplica TUTTI i VOD per asset_id
+        # Deduplica TUTTI i VOD per asset_id: le categorie hanno priorità, così ogni
+        # bucket resta completo anche se il VOD compare anche in "ultimi"
         seen = set()
         all_tiles = []
-        for t in list(recent) + category_tiles:
+        for t in list(category_tiles) + recent:
             aid = t.asset_id or t.id
             if not aid or aid in seen:
                 continue
