@@ -646,13 +646,21 @@ class HeadlessExtractor:
         chal = cdm.get_license_challenge(sess, PSSH(base64.b64decode(self.result["pssh"])))
 
         dev_id = getattr(self, "_real_device_id", None) or self._device_id()
+        # DAZN license server vuole solo la parte UUID-base (senza il suffisso -xxxxxxxx)
+        # Il deviceId nel JWT ha formato "UUID-suffisso" (es. "d9777b94-...-4-12hex-0036365a")
+        # UUID standard = 5 gruppi (8-4-4-4-12), il 6° gruppo è il suffisso DAZN -> va rimosso
+        _uuid_parts = dev_id.split("-")
+        dev_id_lic = "-".join(_uuid_parts[:5]) if len(_uuid_parts) == 6 else dev_id
+        console.print(f"[dim]  -> dev_id JWT: {dev_id} | x-daznid licenza: {dev_id_lic}[/dim]")
+
         lic_hdrs = {
             "content-type": "application/octet-stream",
             "origin": "https://www.dazn.com",
             "referer": "https://www.dazn.com/",
             "authorization": f"Bearer {jwt}",
             "x-brand": "DAZN",
-            "x-daznid": dev_id,
+            "x-daznid": dev_id_lic,
+            "x-dazn-device": dev_id_lic,
             "x-correlation-id": str(_uuid.uuid4()),
         }
         console.print(f"[dim]  -> 5. PSSH + Challenge CDM: {time.time() - _t:.2f}s[/dim]")
@@ -681,7 +689,8 @@ class HeadlessExtractor:
             "content-type": "application/octet-stream",
             "authorization": f"Bearer {jwt}",
             "x-brand": "DAZN",
-            "x-daznid": dev_id,
+            "x-daznid": dev_id_lic,
+            "x-dazn-device": dev_id_lic,
             "x-correlation-id": str(_uuid.uuid4()),
         }
 
