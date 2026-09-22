@@ -237,6 +237,16 @@ class HeadlessExtractor:
 
         return ""
 
+    @staticmethod
+    def _clean_device_id(did: str) -> str:
+        """Pulisce il deviceId dal JWT rimuovendo il suffisso |provider (es. '...|dazn').
+        DAZN nel JWT inserisce deviceId nel formato 'UUID-suffisso|dazn' ma x-daznid
+        deve contenere solo la parte prima del pipe: 'UUID-suffisso'.
+        """
+        if not did:
+            return did
+        return did.split("|")[0].strip()
+
     async def _get_page_and_jwt(self, profile_dir=None):
         """Recupera il page object e JWT dal BrowserManager o direttamente dal profilo."""
         from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
@@ -252,7 +262,7 @@ class HeadlessExtractor:
             pl = self._decode_jwt_payload(jwt_disk)
             if pl:
                 jwt = jwt_disk
-                did_jwt = pl.get("deviceId", "")
+                did_jwt = self._clean_device_id(pl.get("deviceId", ""))
                 if did_jwt:
                     self._real_device_id = did_jwt
                 console.print(
@@ -291,7 +301,7 @@ class HeadlessExtractor:
 
         pl = self._decode_jwt_payload(jwt)
         if pl:
-            did_jwt = pl.get("deviceId", "")
+            did_jwt = self._clean_device_id(pl.get("deviceId", ""))
             if did_jwt:
                 self._real_device_id = did_jwt
             console.print(
