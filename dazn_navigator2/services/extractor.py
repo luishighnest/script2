@@ -695,9 +695,22 @@ class HeadlessExtractor:
         }
 
         lr = None
+        # Se page è None (token letto da disco), apri il browser solo per la license
+        # DAZN rifiuta (10802) le richieste di licenza che non arrivano da un browser reale
+        _tmp_browser = None
+        if not page:
+            try:
+                from dazn_navigator2.services.browser import get_browser
+                _tmp_browser = await get_browser(user_data_dir=Path(profile_dir) if profile_dir else None)
+                page = _tmp_browser.page
+                console.print("[dim]  -> Browser aperto per license request (token da disco)[/dim]")
+            except Exception as _be:
+                console.print(f"[dim]  -> Browser non disponibile per license: {_be}[/dim]")
+
         if page:
             try:
                 lr = await page.evaluate(js_lic_code, {"url": la_url, "headers": lic_hdrs_clean, "body": list(chal)})
+
             except Exception as ex:
                 lr = {"ok": False, "error": f"Browser evaluate exception: {ex}"}
 
