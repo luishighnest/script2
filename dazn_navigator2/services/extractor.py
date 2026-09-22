@@ -449,7 +449,9 @@ class HeadlessExtractor:
         playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
-        qs = _pb_qs(asset_id, self._device_id())
+        # Usa _real_device_id (dal JWT) se disponibile: DEVE coincidere con x-daznid nella licenza
+        _dev_id_for_pb = getattr(self, "_real_device_id", None) or self._device_id()
+        qs = _pb_qs(asset_id, _dev_id_for_pb)
         pb_url = f"{playback_svc}?{qs}"
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
@@ -470,7 +472,7 @@ class HeadlessExtractor:
                     await exp.close()
                     if matches and matches[0].asset_id != asset_id:
                         fallback_aid = matches[0].asset_id
-                        qs_fb = _pb_qs(fallback_aid, self._device_id())
+                        qs_fb = _pb_qs(fallback_aid, _dev_id_for_pb)
                         pb_fb_r = await self._chiama_api(f"{playback_svc}?{qs_fb}", jwt, page=page)
                         if pb_fb_r.get("ok"):
                             pb_r = pb_fb_r
