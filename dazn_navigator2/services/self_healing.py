@@ -120,7 +120,7 @@ class DaznDoctor:
             "referer": "https://www.dazn.com/",
         }
 
-        qs_diag = "AssetId=diag-test-stream&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
+        qs_diag = "AssetId=diag-test-stream&PlayerId=%40dazn%2Fpeng-html5-core%2Fweb%2Fweb&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=unknown&Secure=true&Manufacturer=microsoft&PlayReadyInitiator=false&MtaLanguageCode&AppVersion=0.149.9&Capabilities=hcst%2Cmta"
         diag_url = f"{playback_svc}?{qs_diag}"
 
         for imp in test_impersonates:
@@ -156,7 +156,7 @@ class DaznDoctor:
         for mfr in ["Web", "PC", "Windows", "unknown"]:
             if working_impersonate != "headless":
                 s_m = AsyncSession(impersonate=working_impersonate)
-                q = f"AssetId=diag-test&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Manufacturer={mfr}&AppVersion=9.42.0"
+                q = f"AssetId=diag-test&PlayerId=%40dazn%2Fpeng-html5-core%2Fweb%2Fweb&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Manufacturer={mfr}&AppVersion=0.149.9"
                 r_m = await s_m.get(f"{playback_svc}?{q}", headers=headers_test, timeout=5)
                 await s_m.close()
                 if "must have required property" not in r_m.text and "Request blocked" not in r_m.text:

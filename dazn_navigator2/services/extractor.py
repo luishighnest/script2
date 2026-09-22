@@ -15,6 +15,23 @@ WIDEVINE_SID = bytes.fromhex("edef8ba979d64acea3c827dcd51d21ed")
 
 CDP_PORT = 9222
 
+import urllib.parse as _urlparse
+
+# Parametri correnti del player web reale di DAZN (catturati da DevTools, 22/09)
+PB_APP_VERSION = "0.149.9"
+PB_PLAYER_ID = "@dazn/peng-html5-core/web/web"
+PB_CAPABILITIES = "hcst,mta"
+
+
+def _pb_qs(asset_id: str, dev_id: str = "") -> str:
+    sid = f"{int(time.time() * 1000)}-{dev_id or 'unknown'}-{asset_id}-{_uuid.uuid4().hex[:8].upper()}"
+    return (
+        f"AppVersion={PB_APP_VERSION}&DrmType=WIDEVINE&Format=MPEG-DASH"
+        f"&PlayerId={_urlparse.quote(PB_PLAYER_ID, safe='')}&Platform=web&Model=unknown&Secure=true"
+        f"&Manufacturer=microsoft&PlayReadyInitiator=false&Capabilities=hcst%2Cmta"
+        f"&AssetId={asset_id}&MtaLanguageCode&LanguageCode=it&SessionId={sid}"
+    )
+
 
 
 # Preferisce il .wvd incluso nel progetto, poi cerca sul desktop e path noti
@@ -432,7 +449,7 @@ class HeadlessExtractor:
         playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
-        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
+        qs = _pb_qs(asset_id, self._device_id())
         pb_url = f"{playback_svc}?{qs}"
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
@@ -453,7 +470,7 @@ class HeadlessExtractor:
                     await exp.close()
                     if matches and matches[0].asset_id != asset_id:
                         fallback_aid = matches[0].asset_id
-                        qs_fb = f"AssetId={fallback_aid}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
+                        qs_fb = _pb_qs(fallback_aid, self._device_id())
                         pb_fb_r = await self._chiama_api(f"{playback_svc}?{qs_fb}", jwt, page=page)
                         if pb_fb_r.get("ok"):
                             pb_r = pb_fb_r
