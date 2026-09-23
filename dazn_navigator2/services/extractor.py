@@ -15,23 +15,6 @@ WIDEVINE_SID = bytes.fromhex("edef8ba979d64acea3c827dcd51d21ed")
 
 CDP_PORT = 9222
 
-import urllib.parse as _urlparse
-
-# Parametri correnti del player web reale di DAZN (catturati da DevTools, 22/09)
-PB_APP_VERSION = "0.149.9"
-PB_PLAYER_ID = "@dazn/peng-html5-core/web/web"
-PB_CAPABILITIES = "hcst,mta"
-
-
-def _pb_qs(asset_id: str, dev_id: str = "") -> str:
-    sid = f"{int(time.time() * 1000)}-{dev_id or 'unknown'}-{asset_id}-{_uuid.uuid4().hex[:8].upper()}"
-    return (
-        f"AppVersion={PB_APP_VERSION}&DrmType=WIDEVINE&Format=MPEG-DASH"
-        f"&PlayerId={_urlparse.quote(PB_PLAYER_ID, safe='')}&Platform=web&Model=unknown&Secure=true"
-        f"&Manufacturer=microsoft&PlayReadyInitiator=false&Capabilities=hcst%2Cmta"
-        f"&AssetId={asset_id}&MtaLanguageCode&LanguageCode=it&SessionId={sid}"
-    )
-
 
 
 # Preferisce il .wvd incluso nel progetto, poi cerca sul desktop e path noti
@@ -237,16 +220,6 @@ class HeadlessExtractor:
 
         return ""
 
-    @staticmethod
-    def _clean_device_id(did: str) -> str:
-        """Pulisce il deviceId dal JWT rimuovendo il suffisso |provider (es. '...|dazn').
-        DAZN nel JWT inserisce deviceId nel formato 'UUID-suffisso|dazn' ma x-daznid
-        deve contenere solo la parte prima del pipe: 'UUID-suffisso'.
-        """
-        if not did:
-            return did
-        return did.split("|")[0].strip()
-
     async def _get_page_and_jwt(self, profile_dir=None):
         """Recupera il page object e JWT dal BrowserManager o direttamente dal profilo."""
         from dazn_navigator2.services.browser import get_browser, set_active_profile_dir
@@ -262,7 +235,7 @@ class HeadlessExtractor:
             pl = self._decode_jwt_payload(jwt_disk)
             if pl:
                 jwt = jwt_disk
-                did_jwt = self._clean_device_id(pl.get("deviceId", ""))
+                did_jwt = pl.get("deviceId", "")
                 if did_jwt:
                     self._real_device_id = did_jwt
                 console.print(
@@ -301,7 +274,7 @@ class HeadlessExtractor:
 
         pl = self._decode_jwt_payload(jwt)
         if pl:
-            did_jwt = self._clean_device_id(pl.get("deviceId", ""))
+            did_jwt = pl.get("deviceId", "")
             if did_jwt:
                 self._real_device_id = did_jwt
             console.print(
@@ -459,9 +432,7 @@ class HeadlessExtractor:
         playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
-        # Usa _real_device_id (dal JWT) se disponibile: DEVE coincidere con x-daznid nella licenza
-        _dev_id_for_pb = getattr(self, "_real_device_id", None) or self._device_id()
-        qs = _pb_qs(asset_id, _dev_id_for_pb)
+        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
         pb_url = f"{playback_svc}?{qs}"
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
@@ -482,7 +453,7 @@ class HeadlessExtractor:
                     await exp.close()
                     if matches and matches[0].asset_id != asset_id:
                         fallback_aid = matches[0].asset_id
-                        qs_fb = _pb_qs(fallback_aid, _dev_id_for_pb)
+                        qs_fb = f"AssetId={fallback_aid}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
                         pb_fb_r = await self._chiama_api(f"{playback_svc}?{qs_fb}", jwt, page=page)
                         if pb_fb_r.get("ok"):
                             pb_r = pb_fb_r
@@ -656,21 +627,13 @@ class HeadlessExtractor:
         chal = cdm.get_license_challenge(sess, PSSH(base64.b64decode(self.result["pssh"])))
 
         dev_id = getattr(self, "_real_device_id", None) or self._device_id()
-        # DAZN license server vuole solo la parte UUID-base (senza il suffisso -xxxxxxxx)
-        # Il deviceId nel JWT ha formato "UUID-suffisso" (es. "d9777b94-...-4-12hex-0036365a")
-        # UUID standard = 5 gruppi (8-4-4-4-12), il 6° gruppo è il suffisso DAZN -> va rimosso
-        _uuid_parts = dev_id.split("-")
-        dev_id_lic = "-".join(_uuid_parts[:5]) if len(_uuid_parts) == 6 else dev_id
-        console.print(f"[dim]  -> dev_id JWT: {dev_id} | x-daznid licenza: {dev_id_lic}[/dim]")
-
         lic_hdrs = {
             "content-type": "application/octet-stream",
             "origin": "https://www.dazn.com",
             "referer": "https://www.dazn.com/",
             "authorization": f"Bearer {jwt}",
             "x-brand": "DAZN",
-            "x-daznid": dev_id_lic,
-            "x-dazn-device": dev_id_lic,
+            "x-daznid": dev_id,
             "x-correlation-id": str(_uuid.uuid4()),
         }
         console.print(f"[dim]  -> 5. PSSH + Challenge CDM: {time.time() - _t:.2f}s[/dim]")
@@ -699,28 +662,14 @@ class HeadlessExtractor:
             "content-type": "application/octet-stream",
             "authorization": f"Bearer {jwt}",
             "x-brand": "DAZN",
-            "x-daznid": dev_id_lic,
-            "x-dazn-device": dev_id_lic,
+            "x-daznid": dev_id,
             "x-correlation-id": str(_uuid.uuid4()),
         }
 
         lr = None
-        # Se page è None (token letto da disco), apri il browser solo per la license
-        # DAZN rifiuta (10802) le richieste di licenza che non arrivano da un browser reale
-        _tmp_browser = None
-        if not page:
-            try:
-                from dazn_navigator2.services.browser import get_browser
-                _tmp_browser = await get_browser(user_data_dir=Path(profile_dir) if profile_dir else None)
-                page = _tmp_browser.page
-                console.print("[dim]  -> Browser aperto per license request (token da disco)[/dim]")
-            except Exception as _be:
-                console.print(f"[dim]  -> Browser non disponibile per license: {_be}[/dim]")
-
         if page:
             try:
                 lr = await page.evaluate(js_lic_code, {"url": la_url, "headers": lic_hdrs_clean, "body": list(chal)})
-
             except Exception as ex:
                 lr = {"ok": False, "error": f"Browser evaluate exception: {ex}"}
 
