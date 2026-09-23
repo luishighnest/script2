@@ -147,7 +147,8 @@ class HeadlessExtractor:
             pl = self._decode_jwt_payload(tok)
             if not pl:
                 return None
-            if pl.get("country") != "it":
+            country = str(pl.get("country") or "").lower()
+            if country and country != "it":
                 return None
             if pl.get("exp", 0) <= now:
                 return None
@@ -249,7 +250,8 @@ class HeadlessExtractor:
             b = await get_browser(user_data_dir=target_p)
             jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
             pl = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
-            if pl and pl.get("country") == "it" and pl.get("exp", 0) > time.time():
+            country = str(pl.get("country") or "").lower() if pl else ""
+            if pl and (not country or country == "it") and pl.get("exp", 0) > time.time():
                 jwt = jwt_browser
                 console.print("[dim]  -> Token DAZN valido dal localStorage del browser[/dim]")
 
@@ -257,7 +259,8 @@ class HeadlessExtractor:
                 await b.ensure_session()
                 jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
                 pl = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
-                if pl and pl.get("country") == "it" and pl.get("exp", 0) > time.time():
+                country = str(pl.get("country") or "").lower() if pl else ""
+                if pl and (not country or country == "it") and pl.get("exp", 0) > time.time():
                     jwt = jwt_browser
                     console.print("[dim]  -> Token DAZN valido rinfrescato dal browser[/dim]")
                 else:
@@ -412,7 +415,15 @@ class HeadlessExtractor:
                     if res and res.get("ok"):
                         return res
                 except Exception as ex:
-                    return {"ok": False, "error": str(ex)}
+                    err_str = str(ex).lower()
+                    if "execution context was destroyed" in err_str or "navigation" in err_str:
+                        await asyncio.sleep(0.5)
+                        try:
+                            res = await page.evaluate(js_code, {"url": url, "method": method, "headers": headers, "body": body_obj})
+                            if res and res.get("ok"):
+                                return res
+                        except Exception:
+                            pass
             return {"ok": False, "error": str(e)}
 
     async def estrai(self, profile_dir, asset_id, titolo="") -> dict:

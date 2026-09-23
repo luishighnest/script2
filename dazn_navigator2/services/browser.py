@@ -162,7 +162,7 @@ class BrowserManager:
     async def evaluate(self, js: str):
         await self.ensure_session()
         if self._page is None:
-            pages = self._context.pages
+            pages = self._context.pages if self._context else []
             self._page = pages[0] if pages else await self._context.new_page()
         # Wrapper sicuro per evitare SecurityError se evaluate accede a localStorage
         safe_js = f"""
@@ -174,7 +174,20 @@ class BrowserManager:
             }}
         }})()
         """
-        return await self._page.evaluate(safe_js)
+        for attempt in range(3):
+            try:
+                return await self._page.evaluate(safe_js)
+            except Exception as e:
+                err_str = str(e).lower()
+                if "execution context was destroyed" in err_str or "target closed" in err_str or "navigation" in err_str:
+                    await asyncio.sleep(0.5)
+                    if self._context:
+                        pages = self._context.pages
+                        if pages:
+                            self._page = pages[0]
+                    continue
+                return None
+        return None
 
     async def fetch_json(self, url: str, method: str = "GET", body: dict = None, headers: dict = None) -> dict:
         h = dict(headers or {})
