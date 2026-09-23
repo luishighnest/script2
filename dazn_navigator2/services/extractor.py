@@ -154,8 +154,13 @@ class HeadlessExtractor:
                 return None
             return pl
 
-        # 1. Controlla prima il file dedicato auth_token.json (anche se annidato in chrome_profile)
-        possible_auth_files = [p / "auth_token.json", p / "chrome_profile" / "auth_token.json"]
+        # 1. Controlla prima il file dedicato auth_token.json (anche se annidato in chrome_profile o parent)
+        possible_auth_files = [
+            p / "auth_token.json",
+            p / "chrome_profile" / "auth_token.json",
+            p.parent / "auth_token.json",
+            p.parent / "chrome_profile" / "auth_token.json",
+        ]
         for auth_file in possible_auth_files:
             if auth_file.exists():
                 try:
