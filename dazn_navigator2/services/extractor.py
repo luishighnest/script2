@@ -773,17 +773,14 @@ class HeadlessExtractor:
 
         kid_hex, key_hex = keys[0].split(":")
 
-        ck = urllib.parse.quote(base64.b64encode(json.dumps({kid_hex: key_hex}).encode()).decode())
+        ck = base64.b64encode(json.dumps({kid_hex: key_hex}).encode("utf-8")).decode("utf-8")
 
-        hdrs_b64 = urllib.parse.quote(base64.b64encode(json.dumps({
-
-            "user-agent": ua, "referer": "https://www.dazn.com/",
-
-            "origin": "https://www.dazn.com", "dazn-token": dazn_token,
-
-        }).encode()).decode())
-
-
+        hdrs_b64 = base64.b64encode(json.dumps({
+            "user-agent": ua,
+            "referer": "https://www.dazn.com/",
+            "origin": "https://www.dazn.com",
+            "dazn-token": dazn_token,
+        }).encode("utf-8")).decode("utf-8")
 
         ext_mpd = chosen_fetch_url if chosen_fetch_url else mpd_url_original
 
