@@ -1,3 +1,6 @@
-2026/09/16-20:37:14.645 2c34 Reusing MANIFEST C:\Users\alecl\Desktop\DAZN1\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/09/16-20:37:14.650 2c34 Recovering log #79
-2026/09/16-20:37:14.931 2c34 Reusing old log C:\Users\alecl\Desktop\DAZN1\chrome_profile\Default\Local Storage\leveldb/000079.log 
+2026/09/20-09:50:44.425 570 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/09/20-09:50:44.516 570 Recovering log #42
+2026/09/20-09:50:44.684 570 Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Local Storage\leveldb/000042.log 
+2026/09/20-11:51:09.296 22d8 Level-0 table #46: started
+2026/09/20-11:51:09.331 22d8 Level-0 table #46: 27521 bytes OK
+2026/09/20-11:51:09.344 22d8 Delete type=0 #42
