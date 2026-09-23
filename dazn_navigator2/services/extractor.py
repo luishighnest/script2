@@ -235,7 +235,7 @@ class HeadlessExtractor:
             pl = self._decode_jwt_payload(jwt_disk)
             if pl:
                 jwt = jwt_disk
-                did_jwt = pl.get("deviceId", "")
+                did_jwt = pl.get("deviceId", "").split("|")[0].strip()
                 if did_jwt:
                     self._real_device_id = did_jwt
                 console.print(
@@ -274,7 +274,7 @@ class HeadlessExtractor:
 
         pl = self._decode_jwt_payload(jwt)
         if pl:
-            did_jwt = pl.get("deviceId", "")
+            did_jwt = pl.get("deviceId", "").split("|")[0].strip()
             if did_jwt:
                 self._real_device_id = did_jwt
             console.print(
