@@ -785,12 +785,11 @@ class HeadlessExtractor:
 
 
 
+        ext_mpd = chosen_fetch_url if chosen_fetch_url else mpd_url_original
+
         self.result["ext_url"] = (
-
             "extension://opmeopcambhfimffbomjgemehjkbbmji/pages/player.html#"
-
-            f"{mpd_url_original}&ck={ck}&headers={hdrs_b64}"
-
+            f"{ext_mpd}&ck={ck}&headers={hdrs_b64}"
         )
 
         self.result["kodi_url"] = f"{fetch_mpd_url}&ck={ck}&headers={hdrs_b64}"
