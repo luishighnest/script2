@@ -522,19 +522,32 @@ class DaznExplorer:
         return items
 
     async def _fetch_epg(self) -> List[ContentTile]:
-        data = await self.client.get(
-            "/Rail?platform=web&id=LinearChannels&country=it&brand=dazn&languageCode=it"
-        )
-        tiles = data.get("Tiles", [])
+        tiles = []
+        try:
+            data = await self.client.get(
+                "/Rail?platform=web&id=LinearChannels&country=it&brand=dazn&languageCode=it"
+            )
+            tiles = data.get("Tiles", [])
+        except Exception:
+            pass
+
+        if not tiles:
+            try:
+                # Fallback di ricerca per canali lineari live
+                s_tiles = await self.search("DAZN")
+                tiles = [t.raw for t in s_tiles if t.tile_type.lower() in ("live", "linear") or "dazn" in t.title.lower()]
+            except Exception:
+                pass
+
         items = []
         for t in tiles:
             ct = ContentTile(
                 id=t.get("Id", ""),
-                asset_id=t.get("AssetId", ""),
+                asset_id=t.get("AssetId", "") or t.get("Id", ""),
                 title=t.get("Title", "Senza titolo"),
                 description=t.get("Description", ""),
                 section="TV Live",
-                tile_type="Linear",
+                tile_type=t.get("Type", "Linear"),
                 image=t.get("Image", "") or "",
                 raw=t,
             )
