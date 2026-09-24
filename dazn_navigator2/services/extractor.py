@@ -627,73 +627,68 @@ class HeadlessExtractor:
         chal = cdm.get_license_challenge(sess, PSSH(base64.b64decode(self.result["pssh"])))
 
         pl_jwt = self._decode_jwt_payload(jwt) or {}
-        jwt_did = pl_jwt.get("deviceId")
-        dev_id = jwt_did if jwt_did else (getattr(self, "_real_device_id", None) or self._device_id())
-        if dev_id:
-            dev_id = dev_id.split("|")[0].strip()
-        lic_hdrs = {
-            "content-type": "application/octet-stream",
-            "origin": "https://www.dazn.com",
-            "referer": "https://www.dazn.com/",
-            "authorization": f"Bearer {jwt}",
-            "x-brand": "DAZN",
-            "x-daznid": dev_id,
-            "x-dazn-device": dev_id,
-            "x-correlation-id": str(_uuid.uuid4()),
-        }
-        console.print(f"[dim]  -> 5. PSSH + Challenge CDM (using x-daznid={dev_id}): {time.time() - _t:.2f}s[/dim]")
-
-        _t = time.time()
-        # License request: usiamo il browser context page con gli header specifici
-        js_lic_code = """async ({url, headers, body}) => {
-            try {
-                const r = await fetch(url, {method:"POST", headers, body: new Uint8Array(body), credentials: "include"});
-                if (!r.ok) {
-                    const txt = await r.text();
-                    return {ok: false, status: r.status, statusText: r.statusText, bodyText: txt, headers: Object.fromEntries(r.headers.entries())};
-                }
-                const buf = await r.arrayBuffer();
-                const bytes = new Uint8Array(buf);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                    binary += String.fromCharCode(bytes[i]);
-                }
-                return {ok: true, status: r.status, body: btoa(binary)};
-            } catch(e) {
-                return {ok: false, error: e.name + ': ' + e.message};
-            }
-        }"""
-        lic_hdrs_clean = {
-            "content-type": "application/octet-stream",
-            "authorization": f"Bearer {jwt}",
-            "x-brand": "DAZN",
-            "x-daznid": dev_id,
-            "x-dazn-device": dev_id,
-            "x-correlation-id": str(_uuid.uuid4()),
-        }
+        jwt_did = pl_jwt.get("deviceId") or ""
+        
+        # Prepara varianti di ID per x-daznid / x-dazn-device
+        did_variants = []
+        if jwt_did:
+            did_variants.append(jwt_did)
+            did_clean = jwt_did.split("|")[0].strip()
+            if did_clean not in did_variants:
+                did_variants.append(did_clean)
+            if "-" in did_clean:
+                uuid_only = "-".join(did_clean.split("-")[:5])
+                if uuid_only not in did_variants:
+                    did_variants.append(uuid_only)
+        
+        real_id = getattr(self, "_real_device_id", None) or self._device_id()
+        if real_id and real_id not in did_variants:
+            did_variants.append(real_id)
 
         lr = None
-        if page:
-            try:
-                lr = await page.evaluate(js_lic_code, {"url": la_url, "headers": lic_hdrs_clean, "body": list(chal)})
-            except Exception as ex:
-                lr = {"ok": False, "error": f"Browser evaluate exception: {ex}"}
+        client = await _get_http_session()
 
-        if not lr or not lr.get("ok"):
-            # Tentativo con client HTTP curl_cffi diretto
-            client = await _get_http_session()
+        for cand_id in did_variants:
+            lic_hdrs = {
+                "content-type": "application/octet-stream",
+                "origin": "https://www.dazn.com",
+                "referer": "https://www.dazn.com/",
+                "authorization": f"Bearer {jwt}",
+                "x-brand": "DAZN",
+                "x-daznid": cand_id,
+                "x-dazn-device": cand_id,
+                "x-correlation-id": str(_uuid.uuid4()),
+            }
+            lic_hdrs_clean = {
+                "content-type": "application/octet-stream",
+                "authorization": f"Bearer {jwt}",
+                "x-brand": "DAZN",
+                "x-daznid": cand_id,
+                "x-dazn-device": cand_id,
+                "x-correlation-id": str(_uuid.uuid4()),
+            }
+
+            if page:
+                try:
+                    lr = await page.evaluate(js_lic_code, {"url": la_url, "headers": lic_hdrs_clean, "body": list(chal)})
+                    if lr and lr.get("ok"):
+                        break
+                except Exception as ex:
+                    lr = {"ok": False, "error": f"Browser evaluate exception: {ex}"}
+
             try:
                 lic_resp = await client.post(la_url, headers=lic_hdrs, data=chal, timeout=10)
                 if lic_resp.status_code == 200:
                     lr = {"ok": True, "body": base64.b64encode(lic_resp.content).decode("ascii")}
+                    break
                 else:
-                    # Fallback tramite Cloudflare Worker proxy
                     if PROXY_WORKER:
                         import urllib.parse
                         worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
                         r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
                         if r_w.status_code == 200:
                             lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
+                            break
                         else:
                             lr = {
                                 "ok": False,
@@ -718,6 +713,7 @@ class HeadlessExtractor:
                         r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
                         if r_w.status_code == 200:
                             lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
+                            break
                         else:
                             lr = {"ok": False, "status": r_w.status_code, "bodyText": r_w.text}
                     except Exception as we:
