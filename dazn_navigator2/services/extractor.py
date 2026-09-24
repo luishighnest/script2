@@ -197,33 +197,7 @@ class HeadlessExtractor:
             candidates.sort(key=lambda x: x[0], reverse=True)
             return candidates[0][1]
 
-        # 3. Fallback intelligente: cerca in DAZN1 o in altri profili salvati
-        fallback_dirs = [
-            Path.home() / "Desktop" / "DAZN1" / "chrome_profile",
-            Path.home() / "Desktop" / "DAZN1",
-            Path.home() / "Desktop" / "dazn11" / "chrome_profile",
-            p.parent / "profile_mpd",
-            p.parent / "profile_pz8",
-            p.parent.parent / "chrome_profile",
-        ]
-        for fb in fallback_dirs:
-            if fb != p and fb.exists():
-                for af in [fb / "auth_token.json", fb / "chrome_profile" / "auth_token.json"]:
-                    if af.exists():
-                        try:
-                            data = json.loads(af.read_text(encoding="utf-8"))
-                            tok = data.get("jwt")
-                            if tok and tok.startswith("eyJ") and _it_valid(tok):
-                                # Auto-sync: salvalo anche nel profilo corrente così è sempre aggiornato
-                                try:
-                                    target_af = p / "auth_token.json"
-                                    target_af.write_text(json.dumps(data, indent=2), encoding="utf-8")
-                                except Exception:
-                                    pass
-                                return tok
-                        except Exception:
-                            pass
-
+        # 3. Fallback: non pescare da altri profili se il profilo corrente ha un token specifico
         return ""
 
     async def _get_page_and_jwt(self, profile_dir=None):
@@ -445,10 +419,20 @@ class HeadlessExtractor:
         page, jwt = await self._get_page_and_jwt(profile_dir)
         console.print(f"[dim]  -> 1. Get JWT: {time.time() - _t:.2f}s[/dim]")
 
+        pl_jwt = self._decode_jwt_payload(jwt) or {}
+        jwt_did = pl_jwt.get("deviceId")
+        dev_id = jwt_did if jwt_did else (getattr(self, "_real_device_id", None) or self._device_id())
+        if dev_id:
+            dev_id = dev_id.split("|")[0].strip()
+
         playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
-        qs = f"AssetId={asset_id}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
+        sid = f"{int(time.time()*1000)}-{dev_id}-{asset_id}-{_uuid.uuid4().hex[:8].upper()}"
+        qs = (f"AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH"
+              f"&PlayerId=%40dazn%2Fpeng-html5-core%2Fweb%2Fweb&Platform=web&Model=unknown"
+              f"&Secure=true&Manufacturer=microsoft&PlayReadyInitiator=false&Capabilities=hcst%2Cmta"
+              f"&AssetId={asset_id}&MtaLanguageCode&LanguageCode=it&SessionId={sid}")
         pb_url = f"{playback_svc}?{qs}"
 
         pb_r = await self._chiama_api(pb_url, jwt, page=page)
@@ -642,7 +626,11 @@ class HeadlessExtractor:
         sess = cdm.open()
         chal = cdm.get_license_challenge(sess, PSSH(base64.b64decode(self.result["pssh"])))
 
-        dev_id = getattr(self, "_real_device_id", None) or self._device_id()
+        pl_jwt = self._decode_jwt_payload(jwt) or {}
+        jwt_did = pl_jwt.get("deviceId")
+        dev_id = jwt_did if jwt_did else (getattr(self, "_real_device_id", None) or self._device_id())
+        if dev_id:
+            dev_id = dev_id.split("|")[0].strip()
         lic_hdrs = {
             "content-type": "application/octet-stream",
             "origin": "https://www.dazn.com",
@@ -650,15 +638,16 @@ class HeadlessExtractor:
             "authorization": f"Bearer {jwt}",
             "x-brand": "DAZN",
             "x-daznid": dev_id,
+            "x-dazn-device": dev_id,
             "x-correlation-id": str(_uuid.uuid4()),
         }
-        console.print(f"[dim]  -> 5. PSSH + Challenge CDM: {time.time() - _t:.2f}s[/dim]")
+        console.print(f"[dim]  -> 5. PSSH + Challenge CDM (using x-daznid={dev_id}): {time.time() - _t:.2f}s[/dim]")
 
         _t = time.time()
         # License request: usiamo il browser context page con gli header specifici
         js_lic_code = """async ({url, headers, body}) => {
             try {
-                const r = await fetch(url, {method:"POST", headers, body: new Uint8Array(body)});
+                const r = await fetch(url, {method:"POST", headers, body: new Uint8Array(body), credentials: "include"});
                 if (!r.ok) {
                     const txt = await r.text();
                     return {ok: false, status: r.status, statusText: r.statusText, bodyText: txt, headers: Object.fromEntries(r.headers.entries())};
@@ -679,6 +668,7 @@ class HeadlessExtractor:
             "authorization": f"Bearer {jwt}",
             "x-brand": "DAZN",
             "x-daznid": dev_id,
+            "x-dazn-device": dev_id,
             "x-correlation-id": str(_uuid.uuid4()),
         }
 
