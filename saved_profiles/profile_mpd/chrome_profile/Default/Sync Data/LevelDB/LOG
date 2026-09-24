@@ -1,3 +1,2 @@
-2026/09/21-14:48:16.400 4618 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Sync Data\LevelDB/MANIFEST-000001
-2026/09/21-14:48:16.404 4618 Recovering log #3
-2026/09/21-14:48:16.406 4618 Reusing old log C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\chrome_profile\Default\Sync Data\LevelDB/000003.log 
+2026/09/17-21:07:43.127 200 Creating DB C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\Default\Sync Data\LevelDB since it was missing.
+2026/09/17-21:07:43.147 200 Reusing MANIFEST C:\Users\alecl\Desktop\script2\saved_profiles\profile_mpd\Default\Sync Data\LevelDB/MANIFEST-000001
