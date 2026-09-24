@@ -35,8 +35,6 @@ class BrowserManager:
         ]
 
         try:
-            # Avvio context persistente con Edge (msedge): i profili sono creati da Edge,
-            # solo Edge sa decifrare i cookie di sessione DAZN del profilo.
             self._context = await self._playwright.chromium.launch_persistent_context(
                 user_data_dir=str(p_dir),
                 channel="msedge",
@@ -47,11 +45,10 @@ class BrowserManager:
             pages = self._context.pages
             self._page = pages[0] if pages else await self._context.new_page()
             return
-        except Exception as e:
-            print(f"[BrowserManager] msedge fallito ({e}), fallback su Chromium Playwright")
+        except Exception:
+            pass
 
         try:
-            # Fallback: Chromium nativo di Playwright
             self._context = await self._playwright.chromium.launch_persistent_context(
                 user_data_dir=str(p_dir),
                 headless=True,
@@ -61,10 +58,9 @@ class BrowserManager:
             pages = self._context.pages
             self._page = pages[0] if pages else await self._context.new_page()
             return
-        except Exception as e:
-            print(f"[BrowserManager] launch_persistent_context fallito: {e}, fallback su subprocess")
+        except Exception:
+            pass
 
-        # Fallback secondario: subprocess + CDP
         browser = await self._try_connect_cdp()
         if browser is None:
             browser = await self._launch_chrome(p_dir)
@@ -130,7 +126,6 @@ class BrowserManager:
         })()
         """
 
-        # Se gia' su DAZN con token valido, ritorna subito
         if "dazn.com" in cur:
             try:
                 if await self._page.evaluate(js_check):
@@ -138,15 +133,12 @@ class BrowserManager:
             except Exception:
                 pass
 
-        # Naviga su DAZN per ottenere cookies e token in localStorage
         try:
             await self._page.goto("https://www.dazn.com/it-IT/home", wait_until="domcontentloaded", timeout=20000)
             await asyncio.sleep(2)
-        except Exception as e:
-            print(f"[BrowserManager] Errore navigazione su DAZN: {e}")
+        except Exception:
             return
 
-        # Verifica token dopo navigazione
         try:
             is_valid = await self._page.evaluate(js_check)
         except Exception:
@@ -164,7 +156,6 @@ class BrowserManager:
         if self._page is None:
             pages = self._context.pages if self._context else []
             self._page = pages[0] if pages else await self._context.new_page()
-        # Wrapper sicuro per evitare SecurityError se evaluate accede a localStorage
         safe_js = f"""
         (() => {{
             try {{
@@ -198,75 +189,42 @@ class BrowserManager:
         body_js = json.dumps(body) if body else "null"
         method_js = json.dumps(method)
         js = f"""
-        (async () => {{
-            const tok = localStorage.getItem('MISL.authToken');
-            const h = {hdrs};
-            if (tok) h['Authorization'] = 'Bearer ' + tok;
-            const opts = {{method: {method_js}, headers: h}};
-            if ({body_js}) opts.body = JSON.stringify({body_js});
+        async () => {{
             try {{
-                const r = await fetch('{url}', opts);
-                const txt = await r.text();
-                try {{ return {{ok: r.ok, status: r.status, data: JSON.parse(txt)}}; }}
-                catch(e) {{ return {{ok: r.ok, status: r.status, data: txt}}; }}
+                const opts = {{ method: {method_js}, headers: {hdrs}, credentials: 'include' }};
+                if ({body_js} !== null) opts.body = JSON.stringify({body_js});
+                const r = await fetch({json.dumps(url)}, opts);
+                if (!r.ok) return {{ ok: false, status: r.status }};
+                const text = await r.text();
+                try {{ return {{ ok: true, data: JSON.parse(text) }}; }}
+                catch(e) {{ return {{ ok: true, text: text }}; }}
             }} catch(e) {{
-                return {{ok: false, error: e.message}};
+                return {{ ok: false, error: e.message }};
             }}
-        }})()
+        }}
         """
-        return await self._page.evaluate(js)
-
-    @property
-    def page(self):
-        return self._page
-
-    @property
-    def context(self):
-        return self._context
+        res = await self.evaluate(js)
+        if res and isinstance(res, dict):
+            return res
+        return {"ok": False, "error": "Chiamata fallita."}
 
     async def close(self):
-        if self._context:
-            try:
-                await self._context.close()
-            except Exception:
-                pass
-        if self._playwright:
-            try:
-                await self._playwright.stop()
-            except Exception:
-                pass
-        self._context = None
-        self._page = None
-        self._playwright = None
-
-_browser = None
-_browser_user_data_dir = None
-
-async def get_browser(user_data_dir: Path = None) -> BrowserManager:
-    global _browser, _browser_user_data_dir
-    target_dir = Path(user_data_dir) if user_data_dir else get_active_profile_dir()
-    if _browser is not None:
         try:
-            # Se la directory profilo richiesta è cambiata, chiudi il browser precedente
-            if _browser_user_data_dir != target_dir:
-                await _browser.close()
-                _browser = None
-            elif _browser._page is not None:
-                await _browser._page.evaluate('1')
-                return _browser
+            if self._context:
+                await self._context.close()
         except Exception:
-            try:
-                await _browser.close()
-            except Exception:
-                pass
-            _browser = None
-    _browser = BrowserManager()
-    _browser_user_data_dir = target_dir
-    await _browser.start(user_data_dir=target_dir)
-    return _browser
+            pass
+        try:
+            if self._playwright:
+                await self._playwright.stop()
+        except Exception:
+            pass
 
-async def close_browser():
-    global _browser
-    if _browser:
-        await _browser.close()
-        _browser = None
+_browser_instance = None
+
+async def get_browser() -> BrowserManager:
+    global _browser_instance
+    if _browser_instance is None:
+        _browser_instance = BrowserManager()
+        await _browser_instance.start()
+    return _browser_instance
