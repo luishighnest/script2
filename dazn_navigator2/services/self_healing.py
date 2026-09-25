@@ -23,7 +23,7 @@ class DaznDoctor:
 
     async def run_full_diagnosis_and_repair(self, auto_apply: bool = False) -> bool:
         console.print(Panel(
-            "[bold yellow]🛠️ FIX PROBLEMI DAZN (AUTO-RIPARAZIONE & VERIFICA)[/bold yellow]\n"
+            "[bold yellow]FIX PROBLEMI DAZN (AUTO-RIPARAZIONE & VERIFICA)[/bold yellow]\n"
             "[dim]Controllo completo: Sessione, Endpoint, WAF, Parametri ed Estrazione Flusso Reale...[/dim]",
             expand=False
         ))
@@ -120,7 +120,7 @@ class DaznDoctor:
             "referer": "https://www.dazn.com/",
         }
 
-        qs_diag = "AssetId=diag-test-stream&PlayerId=%40dazn%2Fpeng-html5-core%2Fweb%2Fweb&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=unknown&Secure=true&Manufacturer=microsoft&PlayReadyInitiator=false&MtaLanguageCode&AppVersion=0.149.9&Capabilities=hcst%2Cmta"
+        qs_diag = "AssetId=diag-test-stream&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
         diag_url = f"{playback_svc}?{qs_diag}"
 
         for imp in test_impersonates:
@@ -156,7 +156,7 @@ class DaznDoctor:
         for mfr in ["Web", "PC", "Windows", "unknown"]:
             if working_impersonate != "headless":
                 s_m = AsyncSession(impersonate=working_impersonate)
-                q = f"AssetId=diag-test&PlayerId=%40dazn%2Fpeng-html5-core%2Fweb%2Fweb&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Manufacturer={mfr}&AppVersion=0.149.9"
+                q = f"AssetId=diag-test&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&Manufacturer={mfr}&AppVersion=9.42.0"
                 r_m = await s_m.get(f"{playback_svc}?{q}", headers=headers_test, timeout=5)
                 await s_m.close()
                 if "must have required property" not in r_m.text and "Request blocked" not in r_m.text:
@@ -172,7 +172,7 @@ class DaznDoctor:
         try:
             from dazn_navigator2.services.explorer import DaznExplorer
             from dazn_navigator2.services.extractor import HeadlessExtractor
-            from dazn_navigator2.auth.token_refresh import get_active_profile_dir
+            from dazn_navigator2.auth.token_refresh import PROFILE_DIR
 
             explorer = DaznExplorer()
             tiles = await explorer.get_tiles("LinearChannels") or await explorer.get_tiles("Live") or await explorer.get_tiles("Catchup")
@@ -180,7 +180,7 @@ class DaznDoctor:
                 test_tile = tiles[0]
                 console.print(f"  [dim]Test su contenuto reale:[/dim] [cyan]{test_tile.title}[/cyan]")
                 ext = HeadlessExtractor()
-                res_ext = await ext.estrai(str(get_active_profile_dir()), test_tile.asset_id, test_tile.title)
+                res_ext = await ext.estrai(str(PROFILE_DIR), test_tile.asset_id, test_tile.title)
                 
                 if res_ext.get("ok"):
                     console.print("  [green]✓ MPD & Licenza DRM estratti con successo![/green]")

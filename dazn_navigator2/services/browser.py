@@ -19,6 +19,10 @@ class BrowserManager:
         self._page = None
         self._playwright = None
 
+    @property
+    def page(self):
+        return self._page
+
     async def start(self, user_data_dir: Path = None):
         from playwright.async_api import async_playwright
         self._playwright = await async_playwright().start()
@@ -39,8 +43,8 @@ class BrowserManager:
                 user_data_dir=str(p_dir),
                 channel="msedge",
                 headless=True,
-                args=launch_args,
-                viewport={"width": 1280, "height": 720}
+                viewport={"width": 1280, "height": 720},
+                args=launch_args
             )
             pages = self._context.pages
             self._page = pages[0] if pages else await self._context.new_page()
@@ -52,8 +56,8 @@ class BrowserManager:
             self._context = await self._playwright.chromium.launch_persistent_context(
                 user_data_dir=str(p_dir),
                 headless=True,
-                args=launch_args,
-                viewport={"width": 1280, "height": 720}
+                viewport={"width": 1280, "height": 720},
+                args=launch_args
             )
             pages = self._context.pages
             self._page = pages[0] if pages else await self._context.new_page()
@@ -222,9 +226,11 @@ class BrowserManager:
 
 _browser_instance = None
 
-async def get_browser() -> BrowserManager:
+async def get_browser(user_data_dir: Path = None) -> BrowserManager:
     global _browser_instance
+    if user_data_dir:
+        set_active_profile_dir(user_data_dir)
     if _browser_instance is None:
         _browser_instance = BrowserManager()
-        await _browser_instance.start()
+        await _browser_instance.start(user_data_dir=user_data_dir)
     return _browser_instance

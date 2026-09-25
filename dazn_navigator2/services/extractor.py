@@ -92,7 +92,7 @@ async def _get_http_session():
     sess_loop = getattr(_GLOBAL_SESSION, "_loop", None)
     if _GLOBAL_SESSION is None or (cur_loop is not None and sess_loop is not None and sess_loop != cur_loop):
         from curl_cffi.requests import AsyncSession
-        _GLOBAL_SESSION = AsyncSession(impersonate="chrome131")
+        _GLOBAL_SESSION = AsyncSession(impersonate="chrome142")
     return _GLOBAL_SESSION
 
 class HeadlessExtractor:
@@ -148,7 +148,7 @@ class HeadlessExtractor:
             if not pl:
                 return None
             country = str(pl.get("country") or "").lower()
-            if country and country != "it":
+            if country and country not in ("it", "none", ""):
                 return None
             if pl.get("exp", 0) <= now:
                 return None
@@ -218,34 +218,35 @@ class HeadlessExtractor:
                 did_jwt = pl.get("deviceId", "").split("|")[0].strip()
                 if did_jwt:
                     self._real_device_id = did_jwt
+                c_val = pl.get('country') or pl.get('contentCountry') or 'it'
                 console.print(
-                    f"[dim]  -> Token DAZN valido dal profilo (country={pl.get('country')}, "
+                    f"[dim]  -> Token DAZN valido dal profilo (country={c_val}, "
                     f"scade tra {int(pl.get('exp', 0) - time.time())}s)[/dim]"
                 )
 
-        b = None
-        if not jwt:
-            # 2) Browser: localStorage / sessione rinfrescata (SOLO token country == 'it')
-            b = await get_browser(user_data_dir=target_p)
-            jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
-            pl = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
-            country = str(pl.get("country") or "").lower() if pl else ""
-            if pl and (not country or country == "it") and pl.get("exp", 0) > time.time():
-                jwt = jwt_browser
-                console.print("[dim]  -> Token DAZN valido dal localStorage del browser[/dim]")
+        b = await get_browser(user_data_dir=target_p)
+        if jwt and b and b.page:
+            try:
+                res_ref = await b.page.request.post(
+                    "https://ott-authz-bff-prod.ar.indazn.com/v5/RefreshAccessToken",
+                    headers={"authorization": f"Bearer {jwt}", "content-type": "application/json"}
+                )
+                if res_ref.ok:
+                    ref_json = await res_ref.json()
+                    tok_fresh = ref_json.get("AuthToken", {}).get("Token")
+                    if tok_fresh:
+                        jwt = tok_fresh
+                        console.print("[dim]  -> Token DAZN rigenerato via RefreshAccessToken[/dim]")
+            except Exception:
+                pass
 
-            if not jwt:
-                await b.ensure_session()
-                jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
-                pl = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
-                country = str(pl.get("country") or "").lower() if pl else ""
-                if pl and (not country or country == "it") and pl.get("exp", 0) > time.time():
-                    jwt = jwt_browser
-                    console.print("[dim]  -> Token DAZN valido rinfrescato dal browser[/dim]")
-                else:
-                    jwt_disk2 = self._read_jwt_from_disk(target_p)
-                    if jwt_disk2:
-                        jwt = jwt_disk2
+        if not jwt:
+            await b.ensure_session()
+            jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
+            pl_b = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
+            if pl_b and pl_b.get("exp", 0) > time.time():
+                jwt = jwt_browser
+                console.print("[dim]  -> Token DAZN rinfrescato tramite browser[/dim]")
 
         if not jwt or not jwt.startswith("eyJ"):
             raise RuntimeError(
@@ -302,33 +303,24 @@ class HeadlessExtractor:
 
         headers = {
             "authorization": f"Bearer {jwt}",
+            "dazn-token": cdn_token if cdn_token else jwt,
             "x-dazn-device": dev_id,
             "content-type": "application/json",
             "accept": "*/*",
-            "origin": "https://www.dazn.com",
-            "referer": "https://www.dazn.com/",
         }
-        if cdn_token:
-            headers["dazn-token"] = cdn_token
         
-        # Se l'utente ha scelto la modalità Headless puro
         if engine == "headless" and page:
             try:
-                body_str = json.dumps(body_obj) if body_obj else "null"
-                headers_str = json.dumps(headers)
-                js_code = f"""
-                async () => {{
-                    const opts = {{ method: "{method}", headers: {headers_str}, credentials: 'include' }};
-                    if ({body_str} !== null) opts.body = JSON.stringify({body_str});
-                    const resp = await fetch("{url}", opts);
-                    if (!resp.ok) return {{ok: false, status: resp.status}};
-                    const text = await resp.text();
-                    return {{ok: true, status: resp.status, body: text, type: resp.headers.get("content-type") || "", fallback: true}};
-                }}
-                """
-                res = await page.evaluate(js_code)
-                if res.get("ok"):
-                    return res
+                clean_hdrs = dict(headers)
+                clean_hdrs.pop("origin", None)
+                clean_hdrs.pop("referer", None)
+                if method == "POST":
+                    resp = await page.request.post(url, headers=clean_hdrs, data=json.dumps(body_obj) if body_obj else None)
+                else:
+                    resp = await page.request.get(url, headers=clean_hdrs)
+                body_txt = await resp.text()
+                if resp.status < 500:
+                    return {"ok": resp.ok, "status": resp.status, "body": body_txt, "fallback": True}
             except Exception:
                 pass
 
@@ -354,7 +346,7 @@ class HeadlessExtractor:
                             delete clean_headers['origin'];
                             delete clean_headers['referer'];
                             delete clean_headers['user-agent'];
-                            const opts = { method: method, headers: clean_headers, credentials: 'include' };
+                            const opts = { method: method, headers: clean_headers };
                             if (body !== null) opts.body = JSON.stringify(body);
                             const resp = await fetch(url, opts);
                             const text = await resp.text();
@@ -425,41 +417,80 @@ class HeadlessExtractor:
         if dev_id:
             dev_id = dev_id.split("|")[0].strip()
 
+        from dazn_navigator2.settings import get_setting
+        mfr = (get_setting("playback_manufacturer") or "web").lower()
+        if mfr in ("samsung", "android"):
+            platform_param = "android"
+            player_id_param = "%40dazn%2Fpeng-android%2Fandroid"
+            model_param = "SM-A137F"
+            mfr_param = "samsung"
+        else:
+            platform_param = "web"
+            player_id_param = "%40dazn%2Fpeng-html5-core%2Fweb%2Fweb"
+            model_param = "unknown"
+            mfr_param = "Web"
+
         playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
         sid = f"{int(time.time()*1000)}-{dev_id}-{asset_id}-{_uuid.uuid4().hex[:8].upper()}"
-        qs = (f"AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH"
-              f"&PlayerId=%40dazn%2Fpeng-html5-core%2Fweb%2Fweb&Platform=web&Model=unknown"
-              f"&Secure=true&Manufacturer=microsoft&PlayReadyInitiator=false&Capabilities=hcst%2Cmta"
-              f"&AssetId={asset_id}&MtaLanguageCode&LanguageCode=it&SessionId={sid}")
-        pb_url = f"{playback_svc}?{qs}"
+        pb_url = (f"https://api.playback.indazn.com/v5/Playback?AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH"
+                  f"&PlayerId=%40dazn%2Fpeng-html5-core%2Flg%2Flg&Platform=lg&Model=OLED65CX6LA"
+                  f"&Secure=true&Manufacturer=lg&PlayReadyInitiator=false&Capabilities=hcst%2Cmta"
+                  f"&AssetId={asset_id}&LanguageCode=it&country=it&CountryCode=it")
 
-        pb_r = await self._chiama_api(pb_url, jwt, page=page)
+        lg_ua = "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+
+        if page:
+            r_main_req = await page.request.get(pb_url, headers={
+                "authorization": f"Bearer {jwt}",
+                "dazn-token": jwt,
+                "x-dazn-device": dev_id,
+                "user-agent": lg_ua
+            })
+            pb_r = {"ok": r_main_req.ok, "status": r_main_req.status, "body": await r_main_req.text()}
+        else:
+            pb_r = await self._chiama_api(pb_url, jwt, page=page)
 
         console.print(f"[dim]  -> 3. Playback API: {time.time() - _t:.2f}s[/dim]")
 
         if not pb_r.get("ok"):
-            # Fallback intelligente per canali lineari / eventi: se l'asset_id EPG fallisce, cerca l'asset_id attivo da search
+            # Fallback intelligente per canali lineari / eventi: se l'asset_id EPG fallisce o è terminato, cerca l'asset_id attivo da Rail o Search
             found_fallback = False
-            if titolo:
-                try:
-                    from dazn_navigator2.services.explorer import DaznExplorer
-                    exp = DaznExplorer()
-                    s_res = await exp.search(titolo)
-                    matches = [x for x in s_res if x.tile_type in ('Live', 'Linear') and (x.title.strip().lower() == titolo.strip().lower() or titolo.strip().lower() in x.title.strip().lower())]
-                    if not matches:
-                        matches = [x for x in s_res if x.tile_type in ('Live', 'Linear')]
-                    await exp.close()
-                    if matches and matches[0].asset_id != asset_id:
-                        fallback_aid = matches[0].asset_id
-                        qs_fb = f"AssetId={fallback_aid}&PlayerId=test&DrmType=WIDEVINE&Platform=web&Format=MPEG-DASH&LanguageCode=it&country=it&CountryCode=it&Model=N/A&Secure=true&Manufacturer=Web&PlayReadyInitiator=false&MtaLanguageCode=it&AppVersion=9.42.0&capabilities=mta"
-                        pb_fb_r = await self._chiama_api(f"{playback_svc}?{qs_fb}", jwt, page=page)
-                        if pb_fb_r.get("ok"):
-                            pb_r = pb_fb_r
-                            found_fallback = True
-                except Exception:
-                    pass
+            try:
+                # 1. Tenta prima la ricerca sui canali Live attivi in Rail API
+                if page:
+                    r_rail = await page.request.get(
+                        "https://rail.discovery.indazn.com/eu/v1/Rail?id=live&country=it&language=it",
+                        headers={"authorization": f"Bearer {jwt}", "x-dazn-device": dev_id, "user-agent": lg_ua}
+                    )
+                    if r_rail.ok:
+                        r_data = await r_rail.json()
+                        live_tiles = r_data.get("Tiles", [])
+                        match = None
+                        if titolo:
+                            for t in live_tiles:
+                                if titolo.strip().lower() in t.get("Title", "").strip().lower():
+                                    match = t
+                                    break
+                        if not match and live_tiles:
+                            match = live_tiles[0]
+                        
+                        if match and match.get("AssetId") != asset_id:
+                            fb_aid = match.get("AssetId")
+                            console.print(f"[dim]  -> Fallback su evento Live attivo: {match.get('Title')} ({fb_aid})[/dim]")
+                            fb_url = f"https://api.playback.indazn.com/v5/Playback?AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH&PlayerId=%40dazn%2Fpeng-html5-core%2Flg%2Flg&Platform=lg&Model=OLED65CX6LA&Secure=true&Manufacturer=lg&PlayReadyInitiator=false&Capabilities=hcst%2Cmta&AssetId={fb_aid}&LanguageCode=it&country=it&CountryCode=it"
+                            r_fb_req = await page.request.get(fb_url, headers={
+                                "authorization": f"Bearer {jwt}",
+                                "dazn-token": jwt,
+                                "x-dazn-device": dev_id,
+                                "user-agent": lg_ua
+                            })
+                            if r_fb_req.ok:
+                                pb_r = {"ok": True, "status": r_fb_req.status, "body": await r_fb_req.text()}
+                                found_fallback = True
+            except Exception:
+                pass
 
             if not found_fallback:
                 err_detail = pb_r.get("error") or pb_r.get("body") or f"HTTP {pb_r.get('status', 'sconosciuto')}"
@@ -651,9 +682,10 @@ class HeadlessExtractor:
         for cand_id in did_variants:
             lic_hdrs = {
                 "content-type": "application/octet-stream",
-                "origin": "https://www.dazn.com",
-                "referer": "https://www.dazn.com/",
+                "user-agent": ua,
                 "authorization": f"Bearer {jwt}",
+                "dazn-token": dazn_token,
+                "x-dazn-token": dazn_token,
                 "x-brand": "DAZN",
                 "x-daznid": cand_id,
                 "x-dazn-device": cand_id,
@@ -661,7 +693,10 @@ class HeadlessExtractor:
             }
             lic_hdrs_clean = {
                 "content-type": "application/octet-stream",
+                "user-agent": ua,
                 "authorization": f"Bearer {jwt}",
+                "dazn-token": dazn_token,
+                "x-dazn-token": dazn_token,
                 "x-brand": "DAZN",
                 "x-daznid": cand_id,
                 "x-dazn-device": cand_id,
@@ -670,57 +705,65 @@ class HeadlessExtractor:
 
             if page:
                 try:
-                    lr = await page.evaluate(js_lic_code, {"url": la_url, "headers": lic_hdrs_clean, "body": list(chal)})
-                    if lr and lr.get("ok"):
+                    lic_hdrs["user-agent"] = "Mozilla/5.0 (Linux; Android 12; SM-A137F Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.6778.135 Mobile Safari/537.36"
+                    lic_resp = await page.request.post(
+                        la_url,
+                        headers=lic_hdrs,
+                        data=chal
+                    )
+                    if lic_resp.ok:
+                        lr = {"ok": True, "body": base64.b64encode(await lic_resp.body()).decode("ascii")}
                         break
+                    else:
+                        lr = {"ok": False, "status": lic_resp.status, "bodyText": await lic_resp.text()}
                 except Exception as ex:
-                    lr = {"ok": False, "error": f"Browser evaluate exception: {ex}"}
-
-            try:
-                lic_resp = await client.post(la_url, headers=lic_hdrs, data=chal, timeout=10)
-                if lic_resp.status_code == 200:
-                    lr = {"ok": True, "body": base64.b64encode(lic_resp.content).decode("ascii")}
-                    break
-                else:
-                    if PROXY_WORKER:
-                        import urllib.parse
-                        worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
-                        r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
-                        if r_w.status_code == 200:
-                            lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
-                            break
+                    lr = {"ok": False, "error": f"Browser request exception: {ex}"}
+            else:
+                try:
+                    lic_resp = await client.post(la_url, headers=lic_hdrs, data=chal, timeout=10)
+                    if lic_resp.status_code == 200:
+                        lr = {"ok": True, "body": base64.b64encode(lic_resp.content).decode("ascii")}
+                        break
+                    else:
+                        if PROXY_WORKER:
+                            import urllib.parse
+                            worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
+                            r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
+                            if r_w.status_code == 200:
+                                lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
+                                break
+                            else:
+                                lr = {
+                                    "ok": False,
+                                    "status": r_w.status_code,
+                                    "bodyText": r_w.text,
+                                    "headers": dict(r_w.headers),
+                                    "browser_res": lr
+                                }
                         else:
                             lr = {
                                 "ok": False,
-                                "status": r_w.status_code,
-                                "bodyText": r_w.text,
-                                "headers": dict(r_w.headers),
+                                "status": lic_resp.status_code,
+                                "bodyText": lic_resp.text,
+                                "headers": dict(lic_resp.headers),
                                 "browser_res": lr
                             }
+                except Exception as e:
+                    if PROXY_WORKER:
+                        try:
+                            import urllib.parse
+                            worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
+                            r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
+                            if r_w.status_code == 200:
+                                lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
+                                break
+                            else:
+                                lr = {"ok": False, "status": r_w.status_code, "bodyText": r_w.text}
+                        except Exception as we:
+                            lr = {"ok": False, "error": str(we)}
                     else:
-                        lr = {
-                            "ok": False,
-                            "status": lic_resp.status_code,
-                            "bodyText": lic_resp.text,
-                            "headers": dict(lic_resp.headers),
-                            "browser_res": lr
-                        }
-            except Exception as e:
-                if PROXY_WORKER:
-                    try:
-                        import urllib.parse
-                        worker_la = f"{PROXY_WORKER}/?target={urllib.parse.quote(la_url)}"
-                        r_w = await client.post(worker_la, headers=lic_hdrs, data=chal, timeout=10)
-                        if r_w.status_code == 200:
-                            lr = {"ok": True, "body": base64.b64encode(r_w.content).decode("ascii")}
-                            break
-                        else:
-                            lr = {"ok": False, "status": r_w.status_code, "bodyText": r_w.text}
-                    except Exception as we:
-                        lr = {"ok": False, "error": str(we)}
-                else:
-                    if not lr:
-                        lr = {"ok": False, "error": str(e)}
+                        if not lr:
+                            lr = {"ok": False, "error": str(e)}
 
         if not lr or not lr.get("ok"):
             err_msg = f"Licenza: {lr.get('status','?')} - Motivo: {lr.get('statusText', '')} {lr.get('bodyText', '')[:300]} {lr.get('error', '')}".strip()

@@ -32,17 +32,76 @@ async def _login_playwright() -> bool:
                 user_data_dir=str(PROFILE_DIR),
                 headless=False,
                 channel="msedge",
-                args=["--no-sandbox"],
+                viewport={"width": 1280, "height": 900},
+                args=["--no-sandbox", "--force-device-scale-factor=0.8"],
             )
             page = context.pages[0] if context.pages else await context.new_page()
+            
+            # Script di soppressione completa del banner prima del caricamento
+            await page.add_init_script("""
+            (() => {
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    #onetrust-banner-sdk, #onetrust-consent-sdk, .onetrust-pc-dark-filter, 
+                    [class*="cookie"], [id*="cookie"], [class*="onetrust"], [id*="onetrust"] {
+                        display: none !important;
+                        visibility: hidden !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                    }
+                    html, body {
+                        overflow: auto !important;
+                        position: static !important;
+                        height: auto !important;
+                    }
+                `;
+                document.documentElement.appendChild(style);
+            })();
+            """)
+
             await page.goto("https://www.dazn.com/it-IT/signin", wait_until="domcontentloaded", timeout=0)
             console.print("[cyan]Attendo il login nella finestra del browser... (puoi prenderti tutto il tempo che vuoi)[/cyan]")
+
+            # Auto-click o rimosso automatico del banner dei cookie OneTrust per sbloccare la schermata
+            try:
+                js_cookie_cleaner = """
+                (() => {
+                    const btn = document.querySelector('#onetrust-accept-btn-handler') || 
+                                document.querySelector('button[id*="accept"]') ||
+                                document.querySelector('.onetrust-close-btn-handler');
+                    if (btn) btn.click();
+                    const banner = document.querySelector('#onetrust-banner-sdk') || document.querySelector('#onetrust-consent-sdk');
+                    if (banner) banner.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                })()
+                """
+                await page.evaluate(js_cookie_cleaner)
+            except Exception:
+                pass
 
             while True:
                 await asyncio.sleep(2)
                 try:
+                    js_cookie_cleaner = """
+                    (() => {
+                        const btn = document.querySelector('#onetrust-accept-btn-handler');
+                        if (btn) btn.click();
+                        const banner = document.querySelector('#onetrust-banner-sdk') || document.querySelector('#onetrust-consent-sdk');
+                        if (banner) banner.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                    })()
+                    """
+                    await page.evaluate(js_cookie_cleaner)
+                except Exception:
+                    pass
+
+                try:
                     t = await page.evaluate("localStorage.getItem('MISL.authToken')")
                     if t and t.startswith("eyJ"):
+                        try:
+                            (PROFILE_DIR / "auth_token.json").write_text(json.dumps({"jwt": t}), encoding="utf-8")
+                        except Exception:
+                            pass
                         await context.close()
                         return True
                 except:

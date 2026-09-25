@@ -4,16 +4,6 @@ from pathlib import Path
 TOKEN_FILE = Path(__file__).resolve().parent.parent.parent / "dazn_bearer.json"
 PROFILE_DIR = Path(__file__).resolve().parent.parent.parent / "chrome_profile"
 
-_ACTIVE_PROFILE_DIR = None
-
-def set_active_profile_dir(p: Path):
-    global _ACTIVE_PROFILE_DIR
-    if p:
-        _ACTIVE_PROFILE_DIR = Path(p)
-
-def get_active_profile_dir() -> Path:
-    return _ACTIVE_PROFILE_DIR or PROFILE_DIR
-
 
 def decode_jwt_payload(token: str) -> dict:
     parts = token.split(".")
