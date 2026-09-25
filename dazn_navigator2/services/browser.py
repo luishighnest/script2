@@ -4,7 +4,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CDP_PORT = 9222
 
-_current_profile_dir = BASE_DIR / "chrome_profile"
+_current_profile_dir = BASE_DIR / "saved_profiles" / "profile_mpd" / "chrome_profile"
 
 def set_active_profile_dir(p: Path):
     global _current_profile_dir

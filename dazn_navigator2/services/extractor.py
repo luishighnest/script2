@@ -41,7 +41,7 @@ for scan_path in ([] if WVD_PATH else [r"./", r"C:\Users\alecl\Desktop\l3-keys-m
 
 
 
-DEVICE_ID_FILE = Path(__file__).resolve().parent.parent.parent / "chrome_profile" / "device_id.txt"
+DEVICE_ID_FILE = Path(__file__).resolve().parent.parent.parent / "saved_profiles" / "profile_mpd" / "chrome_profile" / "device_id.txt"
 
 
 
