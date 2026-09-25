@@ -320,6 +320,18 @@ def upload_profile_zip():
 def get_saved_events():
     if "user_profile_id" not in session:
         return jsonify({"error": "Non autenticato"}), 401
+    try:
+        import requests
+        url = "https://ace-seal-162556.upstash.io/get/stream:eventi_mpd"
+        headers = {"Authorization": "Bearer gQAAAAAAAnr8AAIgcDEyZjRkYjEwYmUzZDY0M2RhYjZkNjhmMDFjNGVkMjVmYw"}
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.ok:
+            raw = res.json().get("result")
+            if raw:
+                data = json.loads(raw)
+                return jsonify(data)
+    except Exception as e:
+        print(f"[Upstash API Error] {e}")
     return jsonify(_load(_current_pid()))
 
 @app.route("/api/events/rename", methods=["POST"])

@@ -13,7 +13,7 @@ def get_events_file():
     return EVENTS_FILE
 
 
-def _load():
+def _load(pid=None):
     if EVENTS_FILE.exists():
         try:
             data = json.loads(EVENTS_FILE.read_text(encoding="utf-8-sig"))
@@ -29,7 +29,7 @@ def _load():
     return {}
 
 
-def _save(data):
+def _save(data, pid=None):
     """Scrive il file locale dazn_event.json."""
     EVENTS_FILE.write_text(json.dumps(data, indent=3, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -69,14 +69,14 @@ def _iter_entries(data):
             n += 1
 
 
-def add_event(comp_title, entry):
-    """Aggiunge/sostituisce un evento (dedup per titolo) e salva in locale."""
+def add_event(comp_title, entry, pid=None):
+    """Aggiunge/sostituisce un evento (dedup per titolo), salva in locale e invia ad Upstash."""
     data = _load()
     comp_title = comp_title or "Eventi"
     grp = data.setdefault(comp_title, [])
     grp[:] = [e for e in grp if e.get("name") != entry.get("name")]
     grp.append(entry)
-    _save(data)
+    pubblica(data=data)
 
 
 def _sort_key(item):
