@@ -165,6 +165,14 @@ async def _handle_selected(explorer: DaznExplorer, tiles: list, indices: list):
                 console.print(f"[yellow]Nessun contenuto in '{tile.title}'.[/yellow]")
             continue
         asset_id = tile.asset_id or tile.id
+        try:
+            s_res = await explorer.search(tile.title)
+            match = [x for x in s_res if x.title.strip().lower() == tile.title.strip().lower()]
+            if match and match[0].asset_id:
+                asset_id = match[0].asset_id or match[0].id
+        except Exception:
+            pass
+
         console.print(f"\n[cyan]Estrazione: {tile.title}...[/cyan]")
         ext = HeadlessExtractor()
         try:
