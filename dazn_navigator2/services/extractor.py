@@ -434,7 +434,7 @@ class HeadlessExtractor:
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
         sid = f"{int(time.time()*1000)}-{dev_id}-{asset_id}-{_uuid.uuid4().hex[:8].upper()}"
-        pb_url = (f"https://api.playback.indazn.com/v5/Playback?AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH"
+        pb_url = (f"{playback_svc}?AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH"
                   f"&PlayerId=%40dazn%2Fpeng-html5-core%2Flg%2Flg&Platform=lg&Model=OLED65CX6LA"
                   f"&Secure=true&Manufacturer=lg&PlayReadyInitiator=false&Capabilities=hcst%2Cmta"
                   f"&AssetId={asset_id}&LanguageCode=it&country=it&CountryCode=it")
@@ -473,13 +473,11 @@ class HeadlessExtractor:
                                 if titolo.strip().lower() in t.get("Title", "").strip().lower():
                                     match = t
                                     break
-                        if not match and live_tiles:
-                            match = live_tiles[0]
                         
                         if match and match.get("AssetId") != asset_id:
                             fb_aid = match.get("AssetId")
                             console.print(f"[dim]  -> Fallback su evento Live attivo: {match.get('Title')} ({fb_aid})[/dim]")
-                            fb_url = f"https://api.playback.indazn.com/v5/Playback?AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH&PlayerId=%40dazn%2Fpeng-html5-core%2Flg%2Flg&Platform=lg&Model=OLED65CX6LA&Secure=true&Manufacturer=lg&PlayReadyInitiator=false&Capabilities=hcst%2Cmta&AssetId={fb_aid}&LanguageCode=it&country=it&CountryCode=it"
+                            fb_url = f"{playback_svc}?AppVersion=0.149.9&DrmType=WIDEVINE&Format=MPEG-DASH&PlayerId=%40dazn%2Fpeng-html5-core%2Flg%2Flg&Platform=lg&Model=OLED65CX6LA&Secure=true&Manufacturer=lg&PlayReadyInitiator=false&Capabilities=hcst%2Cmta&AssetId={fb_aid}&LanguageCode=it&country=it&CountryCode=it"
                             r_fb_req = await page.request.get(fb_url, headers={
                                 "authorization": f"Bearer {jwt}",
                                 "dazn-token": jwt,
