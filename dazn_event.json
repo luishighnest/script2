@@ -71,5 +71,16 @@
          "key": "49b47f26593d5eaaab2aaa2cc0f1a200:7a37ebcddd184da73b34207190c950dd",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
+   ],
+   "Courmayeur Cup": [
+      {
+         "name": "Savino Del Bene Scandicci - Numia Vero Volley Milano",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/6bu3q7lf885p3ynmo7i2ub611_image-header_pIt_1789636329000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-26T16:15:00Z",
+         "end": "2026-09-26T19:15:00Z",
+         "mpd": "https://dcg-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvMWQxOHpwM3N6Ym82bjF2OXhwNHQwdTJ3M3UiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQzOTg1MywiZXhwIjoxNzkwNTI2MjUzfQ._sWhFFPn-pAopB6GbBtIuCMlxOAuPa2P4eMc098m6gw/1d18zp3szbo6n1v9xp4t0u2w3u/tv/stream.mpd?channel=5069&outlet=dazn-italy&plang=it",
+         "key": "67213c8c04ab581bbdbac2936ec99e47:8c3ea0bd8d5a61855279387f8e00459c",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
    ]
 }
