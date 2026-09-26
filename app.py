@@ -324,6 +324,34 @@ def upload_profile_zip():
         "github_msg": git_msg
     })
 
+@app.route("/api/delete-profile-session", methods=["POST"])
+def delete_profile_session():
+    if "user_profile_id" not in session:
+        return jsonify({"ok": False, "error": "Non autenticato"}), 401
+
+    pid = session["user_profile_id"]
+    profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
+
+    if profile_dest.exists():
+        try:
+            shutil.rmtree(profile_dest)
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"Impossibile eliminare la cartella profilo: {e}"}), 500
+
+    cfg = load_profiles_config()
+    if pid in cfg:
+        cfg[pid]["chrome_profile_path"] = ""
+        save_profiles_config(cfg)
+
+    git_ok, git_msg = sync_to_github(f"persist: elimina sessione dazn per {pid}")
+
+    return jsonify({
+        "ok": True,
+        "message": "Sessione del profilo eliminata con successo",
+        "github_sync": git_ok,
+        "github_msg": git_msg
+    })
+
 @app.route("/api/events", methods=["GET"])
 def get_saved_events():
     if "user_profile_id" not in session:

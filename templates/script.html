@@ -398,7 +398,12 @@
         <div class="container py-3">
             <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-3 py-1" style="border-radius: 8px; --bs-alert-bg: #11161d;">
                 <small class="text-secondary"><i class="fa-solid fa-check-circle text-success me-1"></i> Profilo attivo: <code id="active-profile-path" class="text-info">{{ chrome_profile_path }}</code></small>
-                <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="showZipSetup()">Carica file JSON</button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="showZipSetup()">Carica file JSON</button>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteProfileSession()" title="Elimina la sessione JSON salvata per questo profilo">
+                        <i class="fa-solid fa-trash me-1"></i>Elimina Sessione
+                    </button>
+                </div>
             </div>
 
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
@@ -648,6 +653,25 @@ function showZipSetup(reasonText) {
             } finally {
                 submitBtn.disabled = false;
                 setTimeout(() => progressContainer.classList.add('d-none'), 800);
+            }
+        }
+
+        async function deleteProfileSession() {
+            if (!confirm("Sei sicuro di voler eliminare la sessione JSON di questo profilo? Dovrai ricaricare dazn_session.json per continuare ad usare lo script.")) {
+                return;
+            }
+            try {
+                const res = await fetch('/api/delete-profile-session', { method: 'POST' });
+                const data = await res.json();
+                if (data.ok) {
+                    hasFolder = false;
+                    document.getElementById('active-profile-path').innerText = "Nessun profilo caricato";
+                    showZipSetup("Sessione del profilo eliminata con successo. Carica un nuovo dazn_session.json per continuare.");
+                } else {
+                    alert("Errore durante l'eliminazione: " + (data.error || "Errore sconosciuto"));
+                }
+            } catch (err) {
+                alert("Errore di connessione: " + err.message);
             }
         }
 
