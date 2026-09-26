@@ -7,7 +7,6 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_FILE = BASE_DIR / "dazn_session.json"
-AUTH_FILE = BASE_DIR / "auth_token.json"
 TEMP_PROFILE_DIR = BASE_DIR / "temp_login_profile"
 
 try:
@@ -113,11 +112,9 @@ async def main():
             }
 
             OUTPUT_FILE.write_text(json.dumps(session_data, indent=2), encoding="utf-8")
-            AUTH_FILE.write_text(json.dumps({"jwt": jwt_token}), encoding="utf-8")
 
             print(f"\n[✓] Sessione salvata con successo in:")
             print(f"    -> {OUTPUT_FILE.resolve()}")
-            print(f"    -> {AUTH_FILE.resolve()} ({AUTH_FILE.stat().st_size} bytes)")
 
             await context.close()
 
