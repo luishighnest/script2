@@ -176,10 +176,10 @@ async def _handle_selected(explorer: DaznExplorer, tiles: list, indices: list):
         console.print(f"\n[cyan]Estrazione: {tile.title}...[/cyan]")
         ext = HeadlessExtractor()
         try:
-            result = await asyncio.wait_for(ext.estrai(str(PROFILE_DIR), asset_id, tile.title), timeout=15.0)
+            result = await asyncio.wait_for(ext.estrai(str(PROFILE_DIR), asset_id, tile.title), timeout=35.0)
         except asyncio.TimeoutError:
             console.print("[bold red]  ✗ Timeout durante l'estrazione: sessione/token DAZN non responsive o scaduto.[/bold red]")
-            result = {"ok": False, "error": "Timeout (15s) durante l'estrazione"}
+            result = {"ok": False, "error": "Timeout (35s) durante l'estrazione"}
         info = _build_entry(tile, result)
         if info:
             risultati.append(info)

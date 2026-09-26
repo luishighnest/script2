@@ -260,7 +260,7 @@ def logout_action():
     session.clear()
     return redirect("/login")
 
-# API PER UPLOAD ZIP DEL CHROME PROFILE CON AUTO-PUSH SU GITHUB
+# API PER UPLOAD DAZN_SESSION.JSON / JSON SESSION CON AUTO-PUSH SU GITHUB
 @app.route("/api/upload-profile-zip", methods=["POST"])
 def upload_profile_zip():
     if "user_profile_id" not in session:
@@ -270,8 +270,9 @@ def upload_profile_zip():
         return jsonify({"ok": False, "error": "Nessun file inviato"}), 400
 
     uploaded_file = request.files["file"]
-    if not uploaded_file.filename or not uploaded_file.filename.lower().endswith(".zip"):
-        return jsonify({"ok": False, "error": "Formato non supportato. Seleziona un file .zip"}), 400
+    fname = (uploaded_file.filename or "").lower()
+    if not fname.endswith(".json") and not fname.endswith(".zip"):
+        return jsonify({"ok": False, "error": "Seleziona il file dazn_session.json o auth_token.json"}), 400
 
     pid = session["user_profile_id"]
     profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
@@ -283,22 +284,29 @@ def upload_profile_zip():
             pass
     profile_dest.mkdir(parents=True, exist_ok=True)
 
-    zip_path = profile_dest / "temp_profile.zip"
-    uploaded_file.save(str(zip_path))
+    if fname.endswith(".zip"):
+        zip_path = profile_dest / "temp_profile.zip"
+        uploaded_file.save(str(zip_path))
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(profile_dest)
+            zip_path.unlink(missing_ok=True)
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"Errore durante l'estrazione dello zip: {e}"}), 500
+    else:
+        # File JSON diretto (dazn_session.json o auth_token.json)
+        dest_json = profile_dest / "dazn_session.json"
+        uploaded_file.save(str(dest_json))
+        # Salva anche come auth_token.json per retrocompatibilità
+        try:
+            data = json.loads(dest_json.read_text(encoding="utf-8"))
+            tok = data.get("jwt")
+            if tok:
+                (profile_dest / "auth_token.json").write_text(json.dumps({"jwt": tok}), encoding="utf-8")
+        except Exception:
+            pass
 
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(profile_dest)
-        zip_path.unlink(missing_ok=True)
-    except Exception as e:
-        return jsonify({"ok": False, "error": f"Errore durante l'estrazione dello zip: {e}"}), 500
-
-    subdirs = [p for p in profile_dest.iterdir() if p.is_dir()]
-    final_dir = profile_dest
-    if len(subdirs) == 1 and not any(p.is_file() for p in profile_dest.iterdir()):
-        final_dir = subdirs[0]
-
-    rel_profile_str = str(final_dir.relative_to(BASE_DIR))
+    rel_profile_str = str(profile_dest.relative_to(BASE_DIR)).replace("\\", "/")
     cfg = load_profiles_config()
     if pid not in cfg:
         cfg[pid] = {}
@@ -306,7 +314,7 @@ def upload_profile_zip():
     save_profiles_config(cfg)
 
     # SINCRONIZZA AUTOMATICAMENTE SU GITHUB PERMANENTEMENTE
-    git_ok, git_msg = sync_to_github(f"persist: aggiorna chrome_profile per {pid}")
+    git_ok, git_msg = sync_to_github(f"persist: aggiorna sessione dazn per {pid}")
 
     return jsonify({
         "ok": True,

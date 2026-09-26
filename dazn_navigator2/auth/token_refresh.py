@@ -2,7 +2,7 @@ import json, base64, time
 from pathlib import Path
 
 TOKEN_FILE = Path(__file__).resolve().parent.parent.parent / "dazn_bearer.json"
-PROFILE_DIR = Path(__file__).resolve().parent.parent.parent / "saved_profiles" / "profile_mpd" / "chrome_profile"
+PROFILE_DIR = Path(__file__).resolve().parent.parent.parent / "chrome_profile"
 
 
 def decode_jwt_payload(token: str) -> dict:

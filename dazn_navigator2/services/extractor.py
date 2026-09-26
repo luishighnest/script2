@@ -148,17 +148,27 @@ class HeadlessExtractor:
             if not pl:
                 return None
             country = str(pl.get("country") or "").lower()
+            content_country = str(pl.get("contentCountry") or "").lower()
             if country and country not in ("it", "none", ""):
+                return None
+            if content_country and content_country not in ("it", "none", ""):
+                return None
+            # Tenta di scartare i token legacy privi di contentCountry se sono token base
+            if not country and not content_country and "contentCountry" not in pl and "user" in pl:
                 return None
             if pl.get("exp", 0) <= now:
                 return None
             return pl
 
-        # 1. Controlla prima il file dedicato auth_token.json (anche se annidato in chrome_profile o parent)
+        # 1. Controlla prima i file dedicati dazn_session.json / auth_token.json
         possible_auth_files = [
+            p / "dazn_session.json",
             p / "auth_token.json",
+            p / "chrome_profile" / "dazn_session.json",
             p / "chrome_profile" / "auth_token.json",
+            p.parent / "dazn_session.json",
             p.parent / "auth_token.json",
+            p.parent / "chrome_profile" / "dazn_session.json",
             p.parent / "chrome_profile" / "auth_token.json",
         ]
         for auth_file in possible_auth_files:
@@ -166,6 +176,9 @@ class HeadlessExtractor:
                 try:
                     data = json.loads(auth_file.read_text(encoding="utf-8"))
                     tok = data.get("jwt")
+                    did = data.get("device_id")
+                    if did:
+                        self._real_device_id = str(did).split("|")[0].strip()
                     if tok and tok.startswith("eyJ") and _it_valid(tok):
                         return tok
                 except Exception:
@@ -208,23 +221,34 @@ class HeadlessExtractor:
         if target_p:
             set_active_profile_dir(target_p)
 
-        # 1) Disco: auth_token.json / leveldb (SOLO token country == 'it' non scaduti)
-        jwt = ""
-        jwt_disk = self._read_jwt_from_disk(target_p)
-        if jwt_disk and jwt_disk.startswith("eyJ"):
-            pl = self._decode_jwt_payload(jwt_disk)
-            if pl:
-                jwt = jwt_disk
-                did_jwt = pl.get("deviceId", "").split("|")[0].strip()
-                if did_jwt:
-                    self._real_device_id = did_jwt
-                c_val = pl.get('country') or pl.get('contentCountry') or 'it'
-                console.print(
-                    f"[dim]  -> Token DAZN valido dal profilo (country={c_val}, "
-                    f"scade tra {int(pl.get('exp', 0) - time.time())}s)[/dim]"
-                )
-
         b = await get_browser(user_data_dir=target_p)
+        jwt = ""
+
+        # 1) Prima tenta di leggere il token di sessione live direttamente dal browser (localStorage)
+        if b:
+            await b.ensure_session()
+            jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
+            pl_b = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
+            if pl_b and pl_b.get("exp", 0) > time.time():
+                jwt = jwt_browser
+                console.print("[dim]  -> Token DAZN rinfrescato tramite browser[/dim]")
+
+        # 2) Fallback su auth_token.json / leveldb se il browser non ha restituito un token valido
+        if not jwt:
+            jwt_disk = self._read_jwt_from_disk(target_p)
+            if jwt_disk and jwt_disk.startswith("eyJ"):
+                pl = self._decode_jwt_payload(jwt_disk)
+                if pl:
+                    jwt = jwt_disk
+                    did_jwt = pl.get("deviceId", "").split("|")[0].strip()
+                    if did_jwt:
+                        self._real_device_id = did_jwt
+                    c_val = pl.get('country') or pl.get('contentCountry') or 'it'
+                    console.print(
+                        f"[dim]  -> Token DAZN valido dal profilo (country={c_val}, "
+                        f"scade tra {int(pl.get('exp', 0) - time.time())}s)[/dim]"
+                    )
+
         if jwt and b and b.page:
             try:
                 res_ref = await b.page.request.post(
@@ -239,14 +263,6 @@ class HeadlessExtractor:
                         console.print("[dim]  -> Token DAZN rigenerato via RefreshAccessToken[/dim]")
             except Exception:
                 pass
-
-        if not jwt:
-            await b.ensure_session()
-            jwt_browser = await b.evaluate("localStorage.getItem('MISL.authToken')")
-            pl_b = self._decode_jwt_payload(jwt_browser) if jwt_browser and jwt_browser.startswith("eyJ") else None
-            if pl_b and pl_b.get("exp", 0) > time.time():
-                jwt = jwt_browser
-                console.print("[dim]  -> Token DAZN rinfrescato tramite browser[/dim]")
 
         if not jwt or not jwt.startswith("eyJ"):
             raise RuntimeError(
@@ -283,11 +299,24 @@ class HeadlessExtractor:
             except Exception:
                 pass
 
-        # Persist JWT to auth_token.json for future cloud runs
+        # Persist JWT to auth_token.json and dazn_session.json for future runs
         if jwt and jwt.startswith("eyJ") and target_p:
             try:
                 auth_file = Path(target_p) / "auth_token.json"
                 auth_file.write_text(json.dumps({"jwt": jwt}), encoding="utf-8")
+                
+                # Aggiorna anche dazn_session.json se presente
+                session_file = Path(target_p) / "dazn_session.json"
+                if not session_file.exists():
+                    session_file = Path(target_p).parent / "dazn_session.json"
+                if session_file.exists():
+                    try:
+                        sdata = json.loads(session_file.read_text(encoding="utf-8"))
+                        sdata["jwt"] = jwt
+                        sdata["created_at"] = int(time.time())
+                        session_file.write_text(json.dumps(sdata, indent=2), encoding="utf-8")
+                    except Exception:
+                        pass
             except Exception:
                 pass
 
@@ -430,7 +459,7 @@ class HeadlessExtractor:
             model_param = "unknown"
             mfr_param = "Web"
 
-        playback_svc = _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
+        playback_svc = "https://api.playback.indazn.com/v5/Playback" if page else _CACHED_SERVICES.get("Playback", "https://api.playback.indazn.com/v5/Playback")
         console.print(f"[dim]  -> Playback endpoint: {playback_svc}[/dim]")
         _t = time.time()
         sid = f"{int(time.time()*1000)}-{dev_id}-{asset_id}-{_uuid.uuid4().hex[:8].upper()}"
@@ -441,6 +470,7 @@ class HeadlessExtractor:
 
         lg_ua = "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
 
+
         if page:
             r_main_req = await page.request.get(pb_url, headers={
                 "authorization": f"Bearer {jwt}",
@@ -449,6 +479,9 @@ class HeadlessExtractor:
                 "user-agent": lg_ua
             })
             pb_r = {"ok": r_main_req.ok, "status": r_main_req.status, "body": await r_main_req.text()}
+
+
+
         else:
             pb_r = await self._chiama_api(pb_url, jwt, page=page)
 
@@ -577,13 +610,6 @@ class HeadlessExtractor:
                 r_resp = await client.get(c_fetch_url, headers=c_hdrs, timeout=6)
                 if r_resp.status_code == 200:
                     mpd_r = {"ok": True, "status": 200, "body": r_resp.text}
-                elif PROXY_WORKER:
-                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(c_fetch_url)}"
-                    r_worker = await client.get(worker_mpd, headers=c_hdrs, timeout=6)
-                    if r_worker.status_code == 200:
-                        mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
-                    else:
-                        mpd_r = {"ok": False, "status": r_worker.status_code, "body": r_worker.text}
                 elif page:
                     mpd_r = await page.evaluate(
                         """async ({url, token}) => {
@@ -594,6 +620,13 @@ class HeadlessExtractor:
                         }""",
                         {"url": c_fetch_url, "token": c_tok}
                     )
+                elif PROXY_WORKER:
+                    worker_mpd = f"{PROXY_WORKER}/?target={urllib.parse.quote(c_fetch_url)}"
+                    r_worker = await client.get(worker_mpd, headers=c_hdrs, timeout=6)
+                    if r_worker.status_code == 200:
+                        mpd_r = {"ok": True, "status": 200, "body": r_worker.text}
+                    else:
+                        mpd_r = {"ok": False, "status": r_worker.status_code, "body": r_worker.text}
                 else:
                     mpd_r = {"ok": False, "status": r_resp.status_code, "body": r_resp.text}
             except Exception as e:
