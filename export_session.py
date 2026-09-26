@@ -19,13 +19,8 @@ except ImportError:
     sys.exit(1)
 
 async def main():
-    print("==================================================")
-    print("      EXPORTATORE LEGGERO SESSIONE DAZN           ")
-    print("==================================================")
     print("Si sta aprendo il browser per l'accesso a DAZN...")
-    print("Effettua il LOGIN con le tue credenziali DAZN.")
-    print("Lo script rileverà automaticamente l'accesso completato.")
-    print("==================================================\n")
+    print("Effettua il LOGIN con le tue credenziali DAZN.\n")
 
     TEMP_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
