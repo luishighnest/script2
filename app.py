@@ -27,7 +27,7 @@ if sys.stderr is None:
         sys.stderr = io.StringIO()
 
 import threading
-from dazn_navigator2.cli.eventi_cmds import _load, _save, add_event
+from dazn_navigator2.cli.eventi_cmds import _load, _save, add_event, pubblica
 from dazn_navigator2.services.explorer import DaznExplorer
 from dazn_navigator2.services.extractor import HeadlessExtractor
 from dazn_navigator2.services.browser import BrowserManager
@@ -384,7 +384,7 @@ def rename_saved_event():
     data = _load(_current_pid())
     if comp in data and 0 <= int(index) < len(data[comp]):
         data[comp][int(index)]["name"] = new_name
-        _save(data, _current_pid())
+        pubblica(f"Rinomina evento {new_name}", data)
         sync_to_github(f"edit: rinomina evento {new_name} ({_current_pid()})")
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Evento non trovato"}), 404
@@ -395,7 +395,7 @@ def delete_saved_event():
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
     body = request.get_json() or {}
     if body.get("all"):
-        _save({}, _current_pid())
+        pubblica("Cancellati tutti gli eventi", {})
         sync_to_github(f"edit: cancellati tutti gli eventi ({_current_pid()})")
         return jsonify({"ok": True})
     
@@ -409,7 +409,7 @@ def delete_saved_event():
         del data[comp][int(index)]
         if not data[comp]:
             del data[comp]
-        _save(data, _current_pid())
+        pubblica(f"Rimosso evento da {comp}", data)
         sync_to_github(f"edit: rimosso evento da {comp} ({_current_pid()})")
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Evento non trovato"}), 404
@@ -428,7 +428,7 @@ def sort_saved_events():
     nuovo_data = {}
     for _, comp, _, ev_ in ordinato:
         nuovo_data.setdefault(comp, []).append(ev_)
-    _save(nuovo_data, _current_pid())
+    pubblica("Eventi riordinati per data", nuovo_data)
     sync_to_github(f"edit: eventi riordinati per data ({_current_pid()})")
     return jsonify({"ok": True})
 

@@ -748,10 +748,10 @@ function showZipSetup(reasonText) {
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="poster-title mb-0">${itemObj.name}</h6>
                                     <div class="d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="openRenameModal('${encodeURIComponent(comp)}', ${idx}, '${encodeURIComponent(itemObj.name)}')" title="Rinomina">
+                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" data-comp="${encodeURIComponent(comp)}" data-idx="${idx}" data-name="${encodeURIComponent(itemObj.name)}" onclick="openRenameModal(this)" title="Rinomina">
                                             <i class="fa-solid fa-pen"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="deleteEvent('${encodeURIComponent(comp)}', ${idx})" title="Elimina">
+                                        <button class="btn btn-sm btn-outline-mini py-0 px-2" data-comp="${encodeURIComponent(comp)}" data-idx="${idx}" onclick="deleteEvent(this)" title="Elimina">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
@@ -798,10 +798,13 @@ function showZipSetup(reasonText) {
             }
         }
 
-        function openRenameModal(encodedComp, index, encodedName) {
-            document.getElementById('rename-comp').value = decodeURIComponent(encodedComp);
+        function openRenameModal(el) {
+            const comp = decodeURIComponent(el.getAttribute('data-comp') || '');
+            const index = el.getAttribute('data-idx') || '0';
+            const name = decodeURIComponent(el.getAttribute('data-name') || '');
+            document.getElementById('rename-comp').value = comp;
             document.getElementById('rename-index').value = index;
-            document.getElementById('rename-title-input').value = decodeURIComponent(encodedName);
+            document.getElementById('rename-title-input').value = name;
             renameModal.show();
         }
 
@@ -830,8 +833,9 @@ function showZipSetup(reasonText) {
             }
         }
 
-async function deleteEvent(encodedComp, index) {
-            const comp = decodeURIComponent(encodedComp);
+        async function deleteEvent(el) {
+            const comp = decodeURIComponent(el.getAttribute('data-comp') || '');
+            const index = parseInt(el.getAttribute('data-idx') || '0', 10);
 
             try {
                 const res = await fetch('/api/events/delete', {
