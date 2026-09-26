@@ -31,15 +31,15 @@ async def main():
                     user_data_dir=str(TEMP_PROFILE_DIR),
                     headless=False,
                     channel="msedge",
-                    viewport={"width": 1280, "height": 900},
-                    args=["--no-sandbox", "--force-device-scale-factor=0.8"],
+                    viewport=None,
+                    args=["--start-maximized", "--no-sandbox"],
                 )
             except Exception:
                 context = await p.chromium.launch_persistent_context(
                     user_data_dir=str(TEMP_PROFILE_DIR),
                     headless=False,
-                    viewport={"width": 1280, "height": 900},
-                    args=["--no-sandbox", "--force-device-scale-factor=0.8"],
+                    viewport=None,
+                    args=["--start-maximized", "--no-sandbox"],
                 )
 
             page = context.pages[0] if context.pages else await context.new_page()
