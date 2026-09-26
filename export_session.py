@@ -115,8 +115,9 @@ async def main():
             OUTPUT_FILE.write_text(json.dumps(session_data, indent=2), encoding="utf-8")
             AUTH_FILE.write_text(json.dumps({"jwt": jwt_token}), encoding="utf-8")
 
-            print(f"\n[SUCCESS] Sessione salvata in: {OUTPUT_FILE.resolve()}")
-            print(f"File pronto: auth_token.json ({AUTH_FILE.stat().st_size} bytes)")
+            print(f"\n[✓] Sessione salvata con successo in:")
+            print(f"    -> {OUTPUT_FILE.resolve()}")
+            print(f"    -> {AUTH_FILE.resolve()} ({AUTH_FILE.stat().st_size} bytes)")
 
             await context.close()
 
