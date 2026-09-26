@@ -341,7 +341,7 @@
 
     <div id="toast-container"></div>
 
-    <!-- SCHERMATA CARICAMENTO ZIP (SE NON ANCORA CONFIGURATO) -->
+    <!-- SCHERMATA CARICAMENTO SESSIONE JSON (SE NON ANCORA CONFIGURATO) -->
     <div id="section-profile-setup" class="container d-none">
         <div class="auth-card">
             <div class="text-center mb-4">
@@ -367,7 +367,7 @@
                     <div id="upload-status-text" class="text-center small text-secondary mt-1">Caricamento sessione in corso...</div>
                 </div>
                 <button type="submit" id="btn-submit-zip" class="btn btn-dazn w-100 py-2">
-                    <i class="fa-solid fa-upload me-2"></i>Carica Sessione e Apri Script
+                    <i class="fa-solid fa-upload me-2"></i>Carica Sessione JSON e Apri Script
                 </button>
             </form>
         </div>
@@ -397,8 +397,8 @@
 
         <div class="container py-3">
             <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-3 py-1" style="border-radius: 8px; --bs-alert-bg: #11161d;">
-                <small class="text-secondary"><i class="fa-solid fa-check-circle text-success me-1"></i> Chrome Profile attivo: <code id="active-profile-path" class="text-info">{{ chrome_profile_path }}</code></small>
-                <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="showZipSetup()">Carica nuovo .zip</button>
+                <small class="text-secondary"><i class="fa-solid fa-check-circle text-success me-1"></i> Profilo attivo: <code id="active-profile-path" class="text-info">{{ chrome_profile_path }}</code></small>
+                <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="showZipSetup()">Carica file JSON</button>
             </div>
 
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
@@ -577,7 +577,7 @@ function showZipSetup(reasonText) {
             document.getElementById('section-profile-setup').classList.remove('d-none');
             document.getElementById('section-main').classList.add('d-none');
             document.getElementById('input-zip').value = "";
-            document.getElementById('zip-chosen-name').innerText = "Clicca per selezionare il file .zip";
+            document.getElementById('zip-chosen-name').innerText = "Clicca per selezionare dazn_session.json";
             const errDiv = document.getElementById('setup-error');
             if (reasonText) {
                 errDiv.innerText = reasonText;
@@ -608,7 +608,7 @@ function showZipSetup(reasonText) {
             errDiv.classList.add('d-none');
 
             if (!fileInput.files || !fileInput.files[0]) {
-                errDiv.innerText = "Seleziona un file .zip con la cartella del profilo.";
+                errDiv.innerText = "Seleziona il file dazn_session.json.";
                 errDiv.classList.remove('d-none');
                 return;
             }
@@ -623,7 +623,7 @@ function showZipSetup(reasonText) {
 
             progressContainer.classList.remove('d-none');
             progressBar.style.width = "40%";
-            statusText.innerText = "Caricamento archivio in corso...";
+            statusText.innerText = "Caricamento sessione in corso...";
             submitBtn.disabled = true;
 
             try {
@@ -632,14 +632,14 @@ function showZipSetup(reasonText) {
                     body: formData
                 });
                 progressBar.style.width = "100%";
-                statusText.innerText = "Estrazione completata!";
+                statusText.innerText = "Caricamento completato!";
                 const data = await res.json();
-if (data.ok) {
+                if (data.ok) {
                     hasFolder = true;
                     document.getElementById('active-profile-path').innerText = data.chrome_profile_path;
                     showMain();
                 } else {
-                    errDiv.innerText = data.error || 'Errore durante il caricamento del file zip';
+                    errDiv.innerText = data.error || 'Errore durante il caricamento del file JSON';
                     errDiv.classList.remove('d-none');
                 }
             } catch (err) {
@@ -1167,7 +1167,7 @@ async function deleteEvent(encodedComp, index) {
 
         async function extractItem(id, asset_id, encodedTitle, encodedImage = '', encodedComp = '', encodedStart = '', encodedEnd = '') {
             if (!hasFolder) {
-                showZipSetup("Per estrarre devi prima caricare il Chrome Profile (.zip) di questo profilo. Caricalo qui sotto, poi riprova l'estrazione.");
+                showZipSetup("Per estrarre devi prima caricare il file dazn_session.json di questo profilo. Caricalo qui sotto, poi riprova l'estrazione.");
                 return;
             }
             const title = decodeURIComponent(encodedTitle);
