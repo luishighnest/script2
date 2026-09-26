@@ -260,6 +260,41 @@ def logout_action():
     session.clear()
     return redirect("/login")
 
+def _robust_remove_dir(path: Path):
+    """Chiude prima i browser e rimuove la cartella del profilo in modo sicuro su Windows."""
+    try:
+        from dazn_navigator2.services.browser import close_browser
+        run_async(close_browser())
+    except Exception:
+        pass
+
+    import time, stat
+
+    def remove_readonly(func, p, exc_info):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except Exception:
+            pass
+
+    if path.exists():
+        for f_name in ["dazn_session.json", "auth_token.json"]:
+            f_p = path / f_name
+            if f_p.exists():
+                try:
+                    f_p.unlink()
+                except Exception:
+                    pass
+
+        try:
+            shutil.rmtree(path, onerror=remove_readonly)
+        except Exception:
+            time.sleep(0.3)
+            try:
+                shutil.rmtree(path, ignore_errors=True)
+            except Exception:
+                pass
+
 # API PER UPLOAD DAZN_SESSION.JSON / JSON SESSION CON AUTO-PUSH SU GITHUB
 @app.route("/api/upload-profile-zip", methods=["POST"])
 def upload_profile_zip():
@@ -278,10 +313,7 @@ def upload_profile_zip():
     profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
 
     if profile_dest.exists():
-        try:
-            shutil.rmtree(profile_dest)
-        except Exception:
-            pass
+        _robust_remove_dir(profile_dest)
     profile_dest.mkdir(parents=True, exist_ok=True)
 
     if fname.endswith(".zip"):
@@ -297,7 +329,6 @@ def upload_profile_zip():
         # File JSON diretto (dazn_session.json o auth_token.json)
         dest_json = profile_dest / "dazn_session.json"
         uploaded_file.save(str(dest_json))
-        # Salva anche come auth_token.json per retrocompatibilità
         try:
             data = json.loads(dest_json.read_text(encoding="utf-8"))
             tok = data.get("jwt")
@@ -333,10 +364,7 @@ def delete_profile_session():
     profile_dest = UPLOAD_PROFILES_DIR / f"profile_{pid}"
 
     if profile_dest.exists():
-        try:
-            shutil.rmtree(profile_dest)
-        except Exception as e:
-            return jsonify({"ok": False, "error": f"Impossibile eliminare la cartella profilo: {e}"}), 500
+        _robust_remove_dir(profile_dest)
 
     cfg = load_profiles_config()
     if pid in cfg:
