@@ -397,7 +397,13 @@
 
         <div class="container py-3">
             <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-3 py-1" style="border-radius: 8px; --bs-alert-bg: #11161d;">
-                <small class="text-secondary"><i class="fa-solid fa-check-circle text-success me-1"></i> Profilo attivo: <code id="active-profile-path" class="text-info">{{ chrome_profile_path }}</code></small>
+                <small class="text-secondary" id="profile-status-wrapper">
+                    {% if chrome_profile_set and chrome_profile_path != "Nessun profilo caricato" %}
+                        <i class="fa-solid fa-circle-check text-success me-1" id="profile-status-icon"></i> <span id="profile-status-label">Profilo attivo:</span> <code id="active-profile-path" class="text-info">{{ chrome_profile_path }}</code>
+                    {% else %}
+                        <i class="fa-solid fa-circle-xmark text-danger me-1" id="profile-status-icon"></i> <span id="profile-status-label">Profilo non attivo:</span> <code id="active-profile-path" class="text-secondary">{{ chrome_profile_path }}</code>
+                    {% endif %}
+                </small>
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-outline-mini py-0 px-2" onclick="showZipSetup()">Carica file JSON</button>
                     <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteProfileSession()" title="Elimina la sessione JSON salvata per questo profilo">
@@ -606,6 +612,28 @@ function showZipSetup(reasonText) {
             }
         }
 
+        function updateProfileStatusUI(pathText, isActive) {
+            const icon = document.getElementById('profile-status-icon');
+            const label = document.getElementById('profile-status-label');
+            const pathElem = document.getElementById('active-profile-path');
+
+            if (isActive && pathText && pathText !== "Nessun profilo caricato") {
+                if (icon) icon.className = "fa-solid fa-circle-check text-success me-1";
+                if (label) label.innerText = "Profilo attivo:";
+                if (pathElem) {
+                    pathElem.innerText = pathText;
+                    pathElem.className = "text-info";
+                }
+            } else {
+                if (icon) icon.className = "fa-solid fa-circle-xmark text-danger me-1";
+                if (label) label.innerText = "Profilo non attivo:";
+                if (pathElem) {
+                    pathElem.innerText = pathText || "Nessun profilo caricato";
+                    pathElem.className = "text-secondary";
+                }
+            }
+        }
+
         async function handleZipUpload(e) {
             e.preventDefault();
             const fileInput = document.getElementById('input-zip');
@@ -641,7 +669,7 @@ function showZipSetup(reasonText) {
                 const data = await res.json();
                 if (data.ok) {
                     hasFolder = true;
-                    document.getElementById('active-profile-path').innerText = data.chrome_profile_path;
+                    updateProfileStatusUI(data.chrome_profile_path, true);
                     showMain();
                 } else {
                     errDiv.innerText = data.error || 'Errore durante il caricamento del file JSON';
@@ -665,7 +693,7 @@ function showZipSetup(reasonText) {
                 const data = await res.json();
                 if (data.ok) {
                     hasFolder = false;
-                    document.getElementById('active-profile-path').innerText = "Nessun profilo caricato";
+                    updateProfileStatusUI("Nessun profilo caricato", false);
                     showZipSetup("Sessione del profilo eliminata con successo. Carica un nuovo dazn_session.json per continuare.");
                 } else {
                     alert("Errore durante l'eliminazione: " + (data.error || "Errore sconosciuto"));
