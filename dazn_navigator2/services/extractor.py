@@ -261,6 +261,25 @@ class HeadlessExtractor:
                     if tok_fresh:
                         jwt = tok_fresh
                         console.print("[dim]  -> Token DAZN rigenerato via RefreshAccessToken[/dim]")
+                        # Salva il nuovo token nei file di sessione su disco in modo che persistano
+                        if target_p:
+                            for fname in ["dazn_session.json", "auth_token.json"]:
+                                s_file = target_p / fname
+                                if s_file.exists():
+                                    try:
+                                        data_s = json.loads(s_file.read_text(encoding="utf-8"))
+                                        data_s["jwt"] = tok_fresh
+                                        if "created_at" in data_s:
+                                            data_s["created_at"] = int(time.time())
+                                        s_file.write_text(json.dumps(data_s, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                                    except Exception:
+                                        pass
+                            # Sincronizza il nuovo token su GitHub
+                            try:
+                                from app import sync_to_github
+                                sync_to_github(f"auto-refresh: aggiornato token JWT per {target_p.name}")
+                            except Exception:
+                                pass
             except Exception:
                 pass
 

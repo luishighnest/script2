@@ -1,21 +1,21 @@
 {
    "Live TV": [
       {
-         "name": "DAZN 1",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1788259786000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2024-05-23T10:00:00Z",
-         "end": "3000-01-01T00:00:00Z",
-         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYjQwOGQ2MjRiODQzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQxMTk5NiwiZXhwIjoxNzkwNDk4Mzk2fQ.NqJhZXdA1Z53yHUylWD_THdA0iNh--Atis6L3wwiN8I/dash/dazn-linear-206/stream.mpd?p=tv",
-         "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      },
-      {
          "name": "Eurosport 1",
          "image": "https://image.discovery.indazn.com/eu/v3/eu/none/16i99sm3aq9cg1lmga260qy67y_image-header_pIt_1661948765000/fill/none/top/none/100/1280/720/png/image",
          "start": "2024-05-23T10:00:00Z",
          "end": "3000-01-01T00:00:00Z",
-         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMTEiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQxODYwMywiZXhwIjoxNzkwNDE4OTAzfQ.3wNNOtdJMsYaNd1bV35LTSXamsDmNKhUB7f7l2IZ79Y/dash/dazn-linear-211/stream.mpd?p=tv",
+         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMTEiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQzMjM2OSwiZXhwIjoxNzkwNDMyNjY5fQ.dBHaUtd73mkUaNWwqKDQVzYO5cWCCdbU8YA_pDhOGjo/dash/dazn-linear-211/stream.mpd?p=tv",
          "key": "5b95fea44d1458128174961a2f43244c:8eac54008e5cb7e3751156ad53ca5625",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      },
+      {
+         "name": "DAZN 1",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1788259786000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2024-05-23T10:00:00Z",
+         "end": "3000-01-01T00:00:00Z",
+         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQzMjM3MSwiZXhwIjoxNzkwNTE4NzcxfQ.ou8nJkWANZa3vHw1av9XqH4ncplU3UynGXE26M-nEZ4/dash/dazn-linear-206/stream.mpd?p=tv",
+         "key": "6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       },
       {
@@ -23,61 +23,52 @@
          "image": "https://image.discovery.indazn.com/eu/v3/eu/none/1jlv8gqegq4kk1sky8xmz0nr00_image-header_pIt_1661948805000/fill/none/top/none/100/1280/720/png/image",
          "start": "2024-05-23T10:00:00Z",
          "end": "3000-01-01T00:00:00Z",
-         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMTIiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQxODY3NiwiZXhwIjoxNzkwNDE4OTc2fQ.B_PYHjjyE9JKfmYtfnW4b3KkpUoRx5sB2J_Sf1UVP28/dash/dazn-linear-212/stream.mpd?p=tv",
+         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMTIiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQzMjM3MiwiZXhwIjoxNzkwNDMyNjcyfQ.G-BsfEPVdyEUAPJ1cX1-7u3XCujEE6krYysl7M5A06E/dash/dazn-linear-212/stream.mpd?p=tv",
          "key": "316b4d8767e45e64ad8ba429dca07518:ae0f31d94668346ca4981930fb8ddfc7",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      },
-      {
-         "name": "NOVE",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/g6bwruxgbvsr1stq7m6dpg4ho_image-header_pIt_1764170208000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2025-11-14T11:00:00Z",
-         "end": "3000-01-01T00:00:00Z",
-         "mpd": "https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yNDEiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQxODgyNiwiZXhwIjoxNzkwNTA1MjI2fQ.m26dg6KcvjGuClKbfeIjJDGVz9al76XtkZOXPqLrccE/dash/dazn-linear-241/stream.mpd?p=tv",
-         "key": "698f5c5bbfee53359f23cf476f059f87:e4a65abe0ee79b67964f05d4af4c614b",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ],
    "FIFA ASEAN Cup": [
       {
-         "name": "Pakistan vs. Thailand",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/11w75hntmwj1510kljzvjpng5p_image-header_pIt_1790175980000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-26T09:00:00Z",
-         "end": "2026-09-26T11:30:00Z",
-         "mpd": "https://dca-deit-livedazn.daznedge.net/vmc0og46n0ta1b8feu2qofre6/tv/stream.mpd?channel=3255&outlet=dazn-italy&plang=it&dazn-token=tend:1790505267~proto:dash~geo:IT~asn:13335~path:1_1_ee3208b80e9be84482e3c99e037af4c0ae375d428d30add24c72239d1b34fcab~id:a35d00ec9e23~tk3:210234247b578897ab98786d6e5f0abc797a9d69ad4a25a7cd01d2c0a43e8d38",
-         "key": "8d52f7e1eeba58108cff63d5574fdc77:29221c843b599e24ac07691a2578210f",
+         "name": "Vietnam vs. Philippines",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/1q4jngk47ye2g1aocor0holza7_image-header_pIt_1790176308000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-26T12:30:00Z",
+         "end": "2026-09-26T15:00:00Z",
+         "mpd": "https://dca-deit-livedazn.daznedge.net/27qfes71d3md13jrxt1y3rp0x/tv/stream.mpd?channel=3234&outlet=dazn-italy&plang=it&dazn-token=tend:1790518645~proto:dash~geo:IT~asn:13335~path:1_1_1701e97375dc2f2f59fe73ffd0b431f6caccd34afc7908067a477cc5275579ba~id:a35d00ec9e23~tk3:94a221a9d697f45913dfed5bdcbc75c52c669916fd36ed3b8fc5571f31f6da89",
+         "key": "d8e6b76943a4518a892783d3cdc06991:956eedd6e447a9fb7665dbaccece343b",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ],
-   "F4 Spanish Championship": [
+   "Radio TV Serie A": [
       {
-         "name": "Jerez - Race 1",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/2vej5u7xzq5ujveu99kga28ea_image-header_pIt_1789403237000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-26T08:50:00Z",
-         "end": "2026-09-26T11:50:00Z",
-         "mpd": "https://dca-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvazFjeWt5em1sajF1MWtucWVndjJvdDk3ZiJdLCJleGMiOltdLCJoZWFkZXJzIjpbXSwiY28iOnRydWUsImlwIjpmYWxzZSwiYXNuIjpbIjEzMzM1Il0sInNzaWQiOiJhMzVkMDBlYzllMjMiLCJpbnRzaWciOiJTajdhRjhCcnpiMkljTzI4a0xKcldBcDQ3LV92SmRkanROOWw5VzBTdndNIiwiaWF0IjoxNzkwNDE4OTYwLCJleHAiOjE3OTA1MDUzNjB9.wJ9T_Ix-Et9YcRyKnzBwQkdepKoATZSnOqGAuGHaAQM/k1cykyzmlj1u1knqegv2ot97f/tv/stream.mpd?channel=7025&outlet=dazn-italy&plang=it",
-         "key": "f14e95090c415e0aaccedb4c26ae6cb1:932eb370ec9d7b16b7aa4f32c77bae84",
+         "name": "Il Sabato Della Serie A",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/dy92ttxwxxsfl08r2s6plb8m6_image-header_pIt_1787147085000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-26T12:30:00Z",
+         "end": "2026-09-26T15:10:00Z",
+         "mpd": "https://dca-de-livedazn.daznedge.net/oh5pv2szlprx1g1fgczbrdz7z/tv/stream.mpd?channel=7087&outlet=dazn-italy&plang=it&dazn-token=tend:1790518647~proto:dash~geo:IT~asn:13335~path:1_1_d57e2b9949b31b1369a18910d45550d7927ba73c202782f8a2bbde7324aea88a~id:a35d00ec9e23~tk3:9d2e5e253fdf56c5908ee89ae0e7466595b7b3535df509ad0d10a65184861874",
+         "key": "1f4a6ac1c9825d88ac61f2035ae970b4:02fd18b120e2db181233138e0325f5c6",
+         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      }
+   ],
+   "Serie A Enilive": [
+      {
+         "name": "Monza - Sassuolo",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/bedfzyv3tyb7xk3n9j6gstitf_image-header_pIt_1789761364000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-18T18:45:00Z",
+         "end": "2026-09-18T22:09:22Z",
+         "mpd": "https://dcb-ac-vod.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvMTJ0OWplZTcwMTZndTExb3p2M2NtM21pNmwiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQzMjU0MywiZXhwIjoxNzkwNDMyODQzfQ.W1aRm0UidJtBo_tWGLMpX_n3C-2io_qwl0-JdBUtlNw/12t9jee7016gu11ozv3cm3mi6l/tv/stream.mpd?channel=1638&outlet=dazn-italy&plang=it",
+         "key": "cfb5e2b73bef4f3c878f25ab86a7451f:0d6712bf2a84edcc93d001a9613f6fec",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ],
    "Campionati del Mondo di Ciclismo su Strada": [
       {
-         "name": "Mondiali ciclismo | Linea donne junior",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/79tyzhzt8cohe3q1dlkkv524k_image-header_pIt_1757006962000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-26T10:00:00Z",
-         "end": "2026-09-26T11:45:00Z",
-         "mpd": "https://dca-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvMTh3NjA5b3pqOG5icjFyam92Mm1ydmd1ajEiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQxODk2NCwiZXhwIjoxNzkwNDE5MjY0fQ.1TMgxFeg8NH9CY-9mJFO-OX4PDR9s-W7Blp1F9tsRfo/18w609ozj8nbr1rjov2mrvguj1/tv/stream.mpd?channel=5072&outlet=dazn-italy&plang=it",
-         "key": "4a9edf81f0555a3ca12381e00c29e73f:82972a86f2090589eab83653da5a7254",
-         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-      }
-   ],
-   "Laver Cup": [
-      {
-         "name": "Giorno 2 | Cobolli - Tien",
-         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/dpakpdxpov5hmteeeto4xvbjp_image-header_pIt_1790426849000/fill/none/top/none/100/1280/720/png/image",
-         "start": "2026-09-26T12:00:00Z",
-         "end": "2026-09-26T14:45:00Z",
-         "mpd": "https://dca-de-livedazn.daznedge.net/1ibp3gjiw6tfh1s3c8ojrc1iho/tv/stream.mpd?channel=7011&outlet=dazn-italy&plang=it&dazn-token=tend:1790428821~proto:dash~geo:IT~asn:13335~path:1_1_8b74b7ee9586e6569e623c38972a36ed3ff92795db35474dd5ffeb34065e8f45~id:a35d00ec9e23~tk3:1febf52e9c8da7f227baa6d309eb3ff08c7747c33ebcaa0548cd4266ba8751b7",
-         "key": "3364a02d310d597bbba51da96c5601f0:7ce0f875aeb0b4f7b1b465490b66e600",
+         "name": "Mondiali ciclismo | Linea donne élite",
+         "image": "https://image.discovery.indazn.com/eu/v3/eu/none/bfvs594vrno3czp4bd2uivwbt_image-header_pIt_1789988771000/fill/none/top/none/100/1280/720/png/image",
+         "start": "2026-09-26T13:00:00Z",
+         "end": "2026-09-26T19:00:00Z",
+         "mpd": "https://dca-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvMTV0bjEzaW9nczJqZzFjb3BwZXpsNnh0czMiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJzc2lkIjoiYTM1ZDAwZWM5ZTIzIiwiaW50c2lnIjoiU2o3YUY4QnJ6YjJJY08yOGtMSnJXQXA0Ny1fdkpkZGp0TjlsOVcwU3Z3TSIsImlhdCI6MTc5MDQzMjYzNCwiZXhwIjoxNzkwNDMyOTM0fQ.EiVBnOhoFLc-ZYbQMylLQYGNvbc2Zr7oPiq48Z7Hh1g/15tn13iogs2jg1coppezl6xts3/tv/stream.mpd?channel=5079&outlet=dazn-italy&plang=it",
+         "key": "49b47f26593d5eaaab2aaa2cc0f1a200:7a37ebcddd184da73b34207190c950dd",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
    ]
