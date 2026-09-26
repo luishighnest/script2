@@ -27,7 +27,7 @@ if sys.stderr is None:
         sys.stderr = io.StringIO()
 
 import threading
-from dazn_navigator2.cli.eventi_cmds import _load, _save, add_event, pubblica
+from dazn_navigator2.cli.eventi_cmds import _load, _save, _fetch_from_upstash, add_event, pubblica
 from dazn_navigator2.services.explorer import DaznExplorer
 from dazn_navigator2.services.extractor import HeadlessExtractor
 from dazn_navigator2.services.browser import BrowserManager
@@ -378,15 +378,35 @@ def rename_saved_event():
     comp = body.get("comp")
     index = body.get("index")
     new_name = (body.get("new_name") or "").strip()
-    if not comp or index is None or not new_name:
+    old_name = body.get("old_name")
+    
+    if not new_name:
         return jsonify({"ok": False, "error": "Parametri non validi"}), 400
     
-    data = _load(_current_pid())
-    if comp in data and 0 <= int(index) < len(data[comp]):
-        data[comp][int(index)]["name"] = new_name
+    data = _fetch_from_upstash()
+    renamed = False
+    
+    if comp and comp in data and index is not None:
+        idx = int(index)
+        if 0 <= idx < len(data[comp]):
+            data[comp][idx]["name"] = new_name
+            renamed = True
+
+    if not renamed and old_name:
+        for c, items in data.items():
+            for ev in items:
+                if ev.get("name") == old_name:
+                    ev["name"] = new_name
+                    renamed = True
+                    break
+            if renamed:
+                break
+
+    if renamed:
         pubblica(f"Rinomina evento {new_name}", data)
         sync_to_github(f"edit: rinomina evento {new_name} ({_current_pid()})")
         return jsonify({"ok": True})
+        
     return jsonify({"ok": False, "error": "Evento non trovato"}), 404
 
 @app.route("/api/events/delete", methods=["POST"])
@@ -401,17 +421,49 @@ def delete_saved_event():
     
     comp = body.get("comp")
     index = body.get("index")
-    if not comp or index is None:
-        return jsonify({"ok": False, "error": "Parametri mancanti"}), 400
+    ev_name = body.get("name")
     
-    data = _load(_current_pid())
-    if comp in data and 0 <= int(index) < len(data[comp]):
-        del data[comp][int(index)]
-        if not data[comp]:
-            del data[comp]
-        pubblica(f"Rimosso evento da {comp}", data)
-        sync_to_github(f"edit: rimosso evento da {comp} ({_current_pid()})")
+    data = _fetch_from_upstash()
+    removed = False
+
+    # 1. Tenta per comp + index
+    if comp and comp in data and index is not None:
+        idx = int(index)
+        if 0 <= idx < len(data[comp]):
+            del data[comp][idx]
+            if not data[comp]:
+                del data[comp]
+            removed = True
+
+    # 2. Fallback per nome dell'evento
+    if not removed and ev_name:
+        for c, items in list(data.items()):
+            new_items = [e for e in items if e.get("name") != ev_name]
+            if len(new_items) < len(items):
+                if new_items:
+                    data[c] = new_items
+                else:
+                    del data[c]
+                removed = True
+                break
+
+    # 3. Fallback per comp case-insensitive
+    if not removed and comp and index is not None:
+        idx = int(index)
+        for c in list(data.keys()):
+            if c.strip().lower() == comp.strip().lower():
+                if 0 <= idx < len(data[c]):
+                    del data[c][idx]
+                    if not data[c]:
+                        del data[c]
+                    removed = True
+                    break
+
+    if removed:
+        pubblica("Rimosso evento", data)
+        sync_to_github(f"edit: rimosso evento ({_current_pid()})")
         return jsonify({"ok": True})
+        
     return jsonify({"ok": False, "error": "Evento non trovato"}), 404
 
 @app.route("/api/events/sort", methods=["POST"])
@@ -419,7 +471,7 @@ def sort_saved_events():
     if "user_profile_id" not in session:
         return jsonify({"ok": False, "error": "Non autenticato"}), 401
     from dazn_navigator2.cli.eventi_cmds import _iter_entries, _sort_key
-    data = _load(_current_pid())
+    data = _fetch_from_upstash()
     entries = list(_iter_entries(data))
     if not entries:
         return jsonify({"ok": True})
