@@ -43,7 +43,7 @@
          "image": "https://image.discovery.indazn.com/eu/v3/eu/none/11w75hntmwj1510kljzvjpng5p_image-header_pIt_1790175980000/fill/none/top/none/100/1280/720/png/image",
          "start": "2026-09-26T09:00:00Z",
          "end": "2026-09-26T11:30:00Z",
-         "mpd": "https://dca-deit-livedazn.daznedge.net/@tend:1790505267~proto:dash~geo:IT~asn:13335~path:1_1_ee3208b80e9be84482e3c99e037af4c0ae375d428d30add24c72239d1b34fcab~id:a35d00ec9e23~tk3:210234247b578897ab98786d6e5f0abc797a9d69ad4a25a7cd01d2c0a43e8d38/vmc0og46n0ta1b8feu2qofre6/tv/stream.mpd?channel=3255&outlet=dazn-italy&plang=it",
+         "mpd": "https://dca-deit-livedazn.daznedge.net/vmc0og46n0ta1b8feu2qofre6/tv/stream.mpd?channel=3255&outlet=dazn-italy&plang=it&dazn-token=tend:1790505267~proto:dash~geo:IT~asn:13335~path:1_1_ee3208b80e9be84482e3c99e037af4c0ae375d428d30add24c72239d1b34fcab~id:a35d00ec9e23~tk3:210234247b578897ab98786d6e5f0abc797a9d69ad4a25a7cd01d2c0a43e8d38",
          "key": "8d52f7e1eeba58108cff63d5574fdc77:29221c843b599e24ac07691a2578210f",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }
@@ -76,7 +76,7 @@
          "image": "https://image.discovery.indazn.com/eu/v3/eu/none/dpakpdxpov5hmteeeto4xvbjp_image-header_pIt_1790426849000/fill/none/top/none/100/1280/720/png/image",
          "start": "2026-09-26T12:00:00Z",
          "end": "2026-09-26T14:45:00Z",
-         "mpd": "https://dca-de-livedazn.daznedge.net/@tend:1790428821~proto:dash~geo:IT~asn:13335~path:1_1_8b74b7ee9586e6569e623c38972a36ed3ff92795db35474dd5ffeb34065e8f45~id:a35d00ec9e23~tk3:1febf52e9c8da7f227baa6d309eb3ff08c7747c33ebcaa0548cd4266ba8751b7/1ibp3gjiw6tfh1s3c8ojrc1iho/tv/stream.mpd?channel=7011&outlet=dazn-italy&plang=it",
+         "mpd": "https://dca-de-livedazn.daznedge.net/1ibp3gjiw6tfh1s3c8ojrc1iho/tv/stream.mpd?channel=7011&outlet=dazn-italy&plang=it&dazn-token=tend:1790428821~proto:dash~geo:IT~asn:13335~path:1_1_8b74b7ee9586e6569e623c38972a36ed3ff92795db35474dd5ffeb34065e8f45~id:a35d00ec9e23~tk3:1febf52e9c8da7f227baa6d309eb3ff08c7747c33ebcaa0548cd4266ba8751b7",
          "key": "3364a02d310d597bbba51da96c5601f0:7ce0f875aeb0b4f7b1b465490b66e600",
          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
       }

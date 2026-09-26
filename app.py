@@ -122,19 +122,28 @@ def _image_url(img) -> str:
         return ""
     return str(img) if img else ""
 
-def _build_mpd_auth(mpd_url: str, dazn_token: str) -> str:
-    """Inserisce il token nel path (@token/...) come richiesto dall'addon e dal formato dazn11."""
+def _build_mpd_auth(mpd_url: str, dazn_token: str, cdn_name: str = "dazn-token") -> str:
+    """Inserisce il token nel formato corretto:
+    - /@token/ nel path per i token JWT dei canali lineari (es. indazn.com)
+    - query parameter ?dazn-token=... per i token Akamai (tend:...) degli eventi Live e VOD (es. daznedge.net)
+    """
     if not dazn_token or not mpd_url:
         return mpd_url
-    if "/@" in mpd_url:
+    if "/@" in mpd_url or "dazn-token=" in mpd_url or "hdnea=" in mpd_url:
         return mpd_url
-    if "://" in mpd_url:
-        proto, rest = mpd_url.split("://", 1)
-        if "/" in rest:
-            host, path = rest.split("/", 1)
-            return f"{proto}://{host}/@{dazn_token}/{path}"
-        return f"{proto}://{rest}/@{dazn_token}"
-    return mpd_url
+
+    if dazn_token.startswith("eyJ") and "daznedge.net" not in mpd_url:
+        if "://" in mpd_url:
+            proto, rest = mpd_url.split("://", 1)
+            if "/" in rest:
+                host, path = rest.split("/", 1)
+                return f"{proto}://{host}/@{dazn_token}/{path}"
+            return f"{proto}://{rest}/@{dazn_token}"
+        return mpd_url
+    else:
+        param_name = cdn_name if cdn_name else "dazn-token"
+        sep = "&" if "?" in mpd_url else "?"
+        return f"{mpd_url}{sep}{param_name}={dazn_token}"
 
 def _format_tile_item(t):
     raw = getattr(t, 'raw', {}) or {}
@@ -898,7 +907,8 @@ def extract_stream():
         if res.get("ok"):
             mpd_url = res.get("mpd_url", "")
             dazn_token = res.get("dazn_token", "")
-            mpd_auth = _build_mpd_auth(mpd_url, dazn_token)
+            cdn_name = res.get("cdn_name", "dazn-token")
+            mpd_auth = _build_mpd_auth(mpd_url, dazn_token, cdn_name)
             keys_str = ",".join(res.get("keys", []))
             ua_str = res.get("ua", "")
             logo = image or _image_url(res.get("image"))
